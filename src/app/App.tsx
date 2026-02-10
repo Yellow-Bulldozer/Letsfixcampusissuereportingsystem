@@ -8,16 +8,16 @@ import { ReportIssueForm } from './components/report-issue-form';
 import { VotingSystem } from './components/voting-system';
 import { AdminDashboard } from './components/admin-dashboard';
 import { AuthorityDashboard } from './components/authority-dashboard';
-import { DayBanner } from './components/day-banner';
+import { Profile } from './components/profile';
 import { isSaturday, isWeekday } from './utils/date-utils';
-import { Calendar, LayoutDashboard, Vote as VoteIcon } from 'lucide-react';
+import { Calendar, LayoutDashboard, Vote as VoteIcon, UserCircle } from 'lucide-react';
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
   const [issues, setIssues] = useState<Issue[]>(mockIssues);
   const [votes, setVotes] = useState<Vote[]>(mockVotes);
   const [showReportForm, setShowReportForm] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'voting'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'voting' | 'profile'>('dashboard');
 
   const handleLogin = (userId: string, role: UserRole) => {
     const user = mockUsers.find(u => u.id === userId && u.role === role);
@@ -29,6 +29,11 @@ export default function App() {
   const handleLogout = () => {
     setCurrentUser(null);
     setActiveTab('dashboard');
+  };
+
+  const handleTabChange = (tab: 'dashboard' | 'voting' | 'profile') => {
+    setActiveTab(tab);
+    setShowReportForm(false);
   };
 
   const handleReportIssue = (issueData: {
@@ -110,7 +115,7 @@ export default function App() {
             {/* Tab Navigation */}
             <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
               <button
-                onClick={() => setActiveTab('dashboard')}
+                onClick={() => handleTabChange('dashboard')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
                   activeTab === 'dashboard'
                     ? 'bg-blue-600 text-white'
@@ -121,7 +126,7 @@ export default function App() {
                 Dashboard
               </button>
               <button
-                onClick={() => setActiveTab('voting')}
+                onClick={() => handleTabChange('voting')}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
                   activeTab === 'voting'
                     ? 'bg-blue-600 text-white'
@@ -135,6 +140,17 @@ export default function App() {
                     Live
                   </span>
                 )}
+              </button>
+              <button
+                onClick={() => handleTabChange('profile')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  activeTab === 'profile'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <UserCircle className="w-4 h-4" />
+                Profile
               </button>
             </div>
 
@@ -158,12 +174,14 @@ export default function App() {
                 issues={issues}
                 onReportIssue={() => setShowReportForm(true)}
               />
-            ) : (
+            ) : activeTab === 'voting' ? (
               <VotingSystem
                 issues={issues}
                 userVotedIssueId={userVotedIssueId}
                 onVote={handleVote}
               />
+            ) : (
+              <Profile user={currentUser} issues={issues} votes={votes} />
             )}
 
             {showReportForm && (
@@ -177,18 +195,78 @@ export default function App() {
 
         {/* Admin View */}
         {currentUser.role === 'admin' && (
-          <AdminDashboard
-            issues={issues}
-            onUpdateStatus={handleUpdateStatus}
-          />
+          <>
+            <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
+              <button
+                onClick={() => handleTabChange('dashboard')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  activeTab === 'dashboard'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => handleTabChange('profile')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  activeTab === 'profile'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <UserCircle className="w-4 h-4" />
+                Profile
+              </button>
+            </div>
+            {activeTab === 'dashboard' ? (
+              <AdminDashboard
+                issues={issues}
+                onUpdateStatus={handleUpdateStatus}
+              />
+            ) : (
+              <Profile user={currentUser} issues={issues} votes={votes} />
+            )}
+          </>
         )}
 
         {/* Authority View */}
         {currentUser.role === 'authority' && (
-          <AuthorityDashboard
-            issues={issues}
-            onUpdateStatus={handleUpdateStatus}
-          />
+          <>
+            <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
+              <button
+                onClick={() => handleTabChange('dashboard')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  activeTab === 'dashboard'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <LayoutDashboard className="w-4 h-4" />
+                Dashboard
+              </button>
+              <button
+                onClick={() => handleTabChange('profile')}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                  activeTab === 'profile'
+                    ? 'bg-blue-600 text-white'
+                    : 'text-gray-700 hover:bg-gray-100'
+                }`}
+              >
+                <UserCircle className="w-4 h-4" />
+                Profile
+              </button>
+            </div>
+            {activeTab === 'dashboard' ? (
+              <AuthorityDashboard
+                issues={issues}
+                onUpdateStatus={handleUpdateStatus}
+              />
+            ) : (
+              <Profile user={currentUser} issues={issues} votes={votes} />
+            )}
+          </>
         )}
       </main>
     </div>
