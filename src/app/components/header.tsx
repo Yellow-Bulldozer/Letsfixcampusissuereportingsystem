@@ -8,6 +8,17 @@ interface HeaderProps {
 }
 
 export function Header({ userName, userRole, onLogout }: HeaderProps) {
+  const getRoleLabel = () => {
+    switch (userRole) {
+      case 'student':
+        return 'Student';
+      case 'admin':
+        return 'Admin';
+      case 'authority':
+        return 'Administration';
+    }
+  };
+
   const getRoleIcon = () => {
     switch (userRole) {
       case 'student':
@@ -40,7 +51,7 @@ export function Header({ userName, userRole, onLogout }: HeaderProps) {
               <GraduationCap className="w-6 h-6 text-white" />
             </div>
             <div>
-              <h1 className="font-bold text-gray-900">Campus Issue Reporter</h1>
+              <h1 className="font-bold text-gray-900">Let'sFix</h1>
               <p className="text-xs text-gray-500">Transparent Issue Resolution</p>
             </div>
           </div>
@@ -51,7 +62,7 @@ export function Header({ userName, userRole, onLogout }: HeaderProps) {
               <p className="font-medium text-gray-900">{userName}</p>
               <div className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${getRoleBadgeColor()}`}>
                 {getRoleIcon()}
-                <span className="capitalize">{userRole}</span>
+                <span>{getRoleLabel()}</span>
               </div>
             </div>
             

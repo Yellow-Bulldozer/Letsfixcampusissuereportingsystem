@@ -41,6 +41,17 @@ const getRoleBadgeColor = (role: User['role']) => {
   }
 };
 
+const getRoleLabel = (role: User['role']) => {
+  switch (role) {
+    case 'student':
+      return 'Student';
+    case 'admin':
+      return 'Admin';
+    case 'authority':
+      return 'Administration';
+  }
+};
+
 export function Profile({ user, issues, votes }: ProfileProps) {
   const userIssues = useMemo(() => {
     return issues.filter(issue => issue.reportedBy === user.name);
@@ -78,7 +89,7 @@ export function Profile({ user, issues, votes }: ProfileProps) {
               <h2 className="text-2xl font-bold text-gray-900">{user.name}</h2>
               <div className={`inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-medium ${getRoleBadgeColor(user.role)}`}>
                 {getRoleIcon(user.role)}
-                <span className="capitalize">{user.role}</span>
+                <span>{getRoleLabel(user.role)}</span>
               </div>
             </div>
           </div>

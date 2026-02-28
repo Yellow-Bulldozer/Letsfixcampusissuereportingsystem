@@ -9,26 +9,82 @@ import { VotingSystem } from './components/voting-system';
 import { AdminDashboard } from './components/admin-dashboard';
 import { AuthorityDashboard } from './components/authority-dashboard';
 import { Profile } from './components/profile';
+import { PostLoginContent } from './components/post-login-content';
 import { isSaturday, isWeekday } from './utils/date-utils';
 import { Calendar, LayoutDashboard, Vote as VoteIcon, UserCircle } from 'lucide-react';
 
+const STUDENT_EMAIL_REGEX = /^[a-z0-9]+@grietcollege\.com$/i;
+
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [passwordByUserId, setPasswordByUserId] = useState<Record<string, string>>({
+    student1: 'student123',
+    admin1: 'admin123',
+    authority1: 'authority123'
+  });
   const [issues, setIssues] = useState<Issue[]>(mockIssues);
   const [votes, setVotes] = useState<Vote[]>(mockVotes);
   const [showReportForm, setShowReportForm] = useState(false);
+  const [showPostLoginContent, setShowPostLoginContent] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'voting' | 'profile'>('dashboard');
 
-  const handleLogin = (userId: string, role: UserRole) => {
-    const user = mockUsers.find(u => u.id === userId && u.role === role);
-    if (user) {
-      setCurrentUser(user);
+  const handleSignIn = (email: string, password: string, role: UserRole): string | null => {
+    const normalizedEmail = email.trim().toLowerCase();
+    const matchedUser = users.find(
+      user => user.email.toLowerCase() === normalizedEmail && user.role === role
+    );
+
+    if (!matchedUser) {
+      return 'No account found for this role and email.';
     }
+
+    if (passwordByUserId[matchedUser.id] !== password) {
+      return 'Incorrect password.';
+    }
+
+    setCurrentUser(matchedUser);
+    setShowPostLoginContent(true);
+    return null;
+  };
+
+  const handleSignUp = (payload: {
+    name: string;
+    email: string;
+    collegeId: string;
+    password: string;
+    role: UserRole;
+  }): string | null => {
+    const normalizedEmail = payload.email.trim().toLowerCase();
+    if (users.some(user => user.email.toLowerCase() === normalizedEmail)) {
+      return 'An account with this email already exists.';
+    }
+
+    if (payload.role === 'student' && !STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
+      return 'Students must sign up using: rollno@grietcollege.com';
+    }
+
+    const roleUserCount = users.filter(user => user.role === payload.role).length + 1;
+    const newUserId = `${payload.role}${roleUserCount}`;
+    const newUser: User = {
+      id: newUserId,
+      name: payload.name,
+      email: normalizedEmail,
+      role: payload.role,
+      collegeId: payload.collegeId
+    };
+
+    setUsers(prevUsers => [...prevUsers, newUser]);
+    setPasswordByUserId(prevPasswords => ({ ...prevPasswords, [newUserId]: payload.password }));
+    setCurrentUser(newUser);
+    setShowPostLoginContent(true);
+    return null;
   };
 
   const handleLogout = () => {
     setCurrentUser(null);
     setActiveTab('dashboard');
+    setShowPostLoginContent(false);
   };
 
   const handleTabChange = (tab: 'dashboard' | 'voting' | 'profile') => {
@@ -97,7 +153,7 @@ export default function App() {
     : null;
 
   if (!currentUser) {
-    return <Login onLogin={handleLogin} />;
+    return <Login onSignIn={handleSignIn} onSignUp={handleSignUp} />;
   }
 
   return (
@@ -109,8 +165,35 @@ export default function App() {
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {showPostLoginContent && (
+          <PostLoginContent
+            user={currentUser}
+            issues={issues}
+            onContinue={() => setShowPostLoginContent(false)}
+            onReportIssue={() => {
+              setShowPostLoginContent(false);
+              setActiveTab('dashboard');
+              if (currentUser.role === 'student') {
+                setShowReportForm(true);
+              }
+            }}
+            onViewVoteIssues={() => {
+              setShowPostLoginContent(false);
+              if (currentUser.role === 'student') {
+                setActiveTab('voting');
+                return;
+              }
+              setActiveTab('dashboard');
+            }}
+            onTrackMyIssues={() => {
+              setShowPostLoginContent(false);
+              setActiveTab('profile');
+            }}
+          />
+        )}
+
         {/* Student View */}
-        {currentUser.role === 'student' && (
+        {currentUser.role === 'student' && !showPostLoginContent && (
           <>
             {/* Tab Navigation */}
             <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
@@ -194,7 +277,7 @@ export default function App() {
         )}
 
         {/* Admin View */}
-        {currentUser.role === 'admin' && (
+        {currentUser.role === 'admin' && !showPostLoginContent && (
           <>
             <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
               <button
@@ -232,7 +315,7 @@ export default function App() {
         )}
 
         {/* Authority View */}
-        {currentUser.role === 'authority' && (
+        {currentUser.role === 'authority' && !showPostLoginContent && (
           <>
             <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
               <button
