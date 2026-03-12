@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { User, Issue, UserRole, IssueStatus, Vote } from './types';
+import { Homepage } from './components/homepage';
 import { Login } from './components/login';
 import { Header } from './components/header';
 import { StudentDashboard } from './components/student-dashboard';
@@ -37,6 +38,7 @@ export default function App() {
   const [showPostLoginContent, setShowPostLoginContent] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'voting' | 'profile'>('dashboard');
   const [userVotedIssueId, setUserVotedIssueId] = useState<string | null>(null);
+  const [showHomepage, setShowHomepage] = useState(true);
 
   const hydrateDashboard = async (user: User) => {
     const [issuesFromApi, pollVoteMap] = await Promise.all([
@@ -221,7 +223,19 @@ export default function App() {
   }
 
   if (!currentUser) {
-    return <Login onSignIn={handleSignIn} onSignUp={handleSignUp} />;
+    if (showHomepage) {
+      const goToLogin = () => {
+        setShowHomepage(false);
+        window.scrollTo(0, 0);
+      };
+      return (
+        <Homepage
+          onGetStarted={goToLogin}
+          onSignIn={goToLogin}
+        />
+      );
+    }
+    return <Login onSignIn={handleSignIn} onSignUp={handleSignUp} onGoHome={() => { setShowHomepage(true); window.scrollTo(0, 0); }} />;
   }
 
   return (
@@ -267,22 +281,20 @@ export default function App() {
             <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
               <button
                 onClick={() => handleTabChange('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                  activeTab === 'dashboard'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'dashboard'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </button>
               <button
                 onClick={() => handleTabChange('voting')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                  activeTab === 'voting'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'voting'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <VoteIcon className="w-4 h-4" />
                 Weekly Vote
@@ -294,11 +306,10 @@ export default function App() {
               </button>
               <button
                 onClick={() => handleTabChange('profile')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                  activeTab === 'profile'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'profile'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <UserCircle className="w-4 h-4" />
                 Profile
@@ -350,22 +361,20 @@ export default function App() {
             <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
               <button
                 onClick={() => handleTabChange('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                  activeTab === 'dashboard'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'dashboard'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </button>
               <button
                 onClick={() => handleTabChange('profile')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                  activeTab === 'profile'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'profile'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <UserCircle className="w-4 h-4" />
                 Profile
@@ -388,22 +397,20 @@ export default function App() {
             <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
               <button
                 onClick={() => handleTabChange('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                  activeTab === 'dashboard'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'dashboard'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <LayoutDashboard className="w-4 h-4" />
                 Dashboard
               </button>
               <button
                 onClick={() => handleTabChange('profile')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                  activeTab === 'profile'
-                    ? 'bg-blue-600 text-white'
-                    : 'text-gray-700 hover:bg-gray-100'
-                }`}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'profile'
+                  ? 'bg-blue-600 text-white'
+                  : 'text-gray-700 hover:bg-gray-100'
+                  }`}
               >
                 <UserCircle className="w-4 h-4" />
                 Profile

@@ -1,6 +1,29 @@
 import { FormEvent, useMemo, useState } from 'react';
 import { UserRole } from '../types';
-import { ArrowLeft, Eye, EyeOff, GraduationCap, Shield, UserCog } from 'lucide-react';
+import { ArrowLeft, Eye, EyeOff, GraduationCap, Shield, UserCog, ArrowRight, CheckCircle } from 'lucide-react';
+
+/* ── Campus-themed cards for the radial background ── */
+const CAMPUS_CARDS = [
+  { emoji: '🪑', label: 'Broken Furniture', color: 'card-peach' },
+  { emoji: '💧', label: 'Water Leak', color: 'card-blue' },
+  { emoji: '💡', label: 'Light Outage', color: 'card-cream' },
+  { emoji: '🚧', label: 'Road Damage', color: 'card-rose' },
+  { emoji: '🧹', label: 'Cleanliness', color: 'card-mint' },
+  { emoji: '🔌', label: 'Power Issue', color: 'card-lavender' },
+  { emoji: '🚰', label: 'Plumbing', color: 'card-sky' },
+  { emoji: '🏗️', label: 'Construction', color: 'card-peach' },
+  { emoji: '📶', label: 'WiFi Down', color: 'card-blue' },
+  { emoji: '🗑️', label: 'Waste Mgmt', color: 'card-green' },
+  { emoji: '🔒', label: 'Security', color: 'card-lavender' },
+  { emoji: '🚪', label: 'Door Broken', color: 'card-cream' },
+  { emoji: '🌳', label: 'Landscaping', color: 'card-green' },
+  { emoji: '🖥️', label: 'Lab Equipment', color: 'card-sky' },
+  { emoji: '🚻', label: 'Restroom', color: 'card-mint' },
+  { emoji: '📢', label: 'Noise Issue', color: 'card-rose' },
+] as const;
+
+const CARD_RADIUS = 420; // px — radius of the circle
+const CARD_COUNT = CAMPUS_CARDS.length;
 
 interface LoginProps {
   onSignIn: (email: string, password: string, role: UserRole) => Promise<string | null>;
@@ -11,6 +34,7 @@ interface LoginProps {
     password: string;
     role: UserRole;
   }) => Promise<string | null>;
+  onGoHome: () => void;
 }
 
 type AuthPage = 'role-select' | 'sign-in' | 'sign-up';
@@ -22,36 +46,37 @@ const ROLE_CONFIG = [
     title: 'Student',
     icon: GraduationCap,
     description: 'Report issues and vote on priorities',
-    color: 'bg-blue-500'
+    bg: 'bg-blue-50',
+    iconBg: 'bg-blue-100',
+    iconColor: 'text-blue-600'
   },
   {
     type: 'admin' as UserRole,
     title: 'Administrator',
     icon: Shield,
     description: 'Verify and manage reported issues',
-    color: 'bg-purple-500'
+    bg: 'bg-purple-50',
+    iconBg: 'bg-purple-100',
+    iconColor: 'text-purple-600'
   },
   {
     type: 'authority' as UserRole,
     title: 'Administration',
     icon: UserCog,
     description: 'Track and resolve priority issues',
-    color: 'bg-green-500'
+    bg: 'bg-emerald-50',
+    iconBg: 'bg-emerald-100',
+    iconColor: 'text-emerald-600'
   }
 ] as const;
 
-export function Login({ onSignIn, onSignUp }: LoginProps) {
+export function Login({ onSignIn, onSignUp, onGoHome }: LoginProps) {
   const [selectedRole, setSelectedRole] = useState<UserRole>('student');
   const [authPage, setAuthPage] = useState<AuthPage>('role-select');
-  const [rolePickerIntent, setRolePickerIntent] = useState<'sign-in' | 'sign-up' | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  const [signInForm, setSignInForm] = useState({
-    email: '',
-    password: ''
-  });
-
+  const [signInForm, setSignInForm] = useState({ email: '', password: '' });
   const [signUpForm, setSignUpForm] = useState({
     name: '',
     email: '',
@@ -75,21 +100,14 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
     setSuccessMessage('');
   };
 
-  const openAuthPage = (page: 'sign-in' | 'sign-up') => {
+  const goToAuth = (page: 'sign-in' | 'sign-up') => {
     resetMessages();
-    setRolePickerIntent(page);
+    setAuthPage(page);
   };
 
   const resetToRoleSelect = () => {
     resetMessages();
     setAuthPage('role-select');
-  };
-
-  const handleRoleSelectionConfirm = () => {
-    if (!rolePickerIntent) return;
-    resetMessages();
-    setAuthPage(rolePickerIntent);
-    setRolePickerIntent(null);
   };
 
   const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
@@ -125,17 +143,14 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
       setErrorMessage('Please complete all required fields.');
       return;
     }
-
     if (signUpForm.password.length < 6) {
       setErrorMessage('Password must be at least 6 characters.');
       return;
     }
-
     if (signUpForm.password !== signUpForm.confirmPassword) {
       setErrorMessage('Passwords do not match.');
       return;
     }
-
     if (selectedRole === 'student' && !isStudentEmailVerified) {
       setErrorMessage('Please verify your college email before signing up.');
       return;
@@ -155,352 +170,306 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
       setErrorMessage(error);
       return;
     }
-
     setSuccessMessage('Account created successfully.');
   };
 
   return (
-    <div className="relative min-h-screen overflow-hidden bg-gradient-to-br from-[#dff1ff] via-[#f2f7ff] to-[#ece8ff] px-4 py-8">
-      <div className="pointer-events-none absolute -left-20 -top-20 h-72 w-72 rounded-full bg-blue-300/35 blur-3xl" />
-      <div className="pointer-events-none absolute -right-24 top-24 h-80 w-80 rounded-full bg-violet-300/30 blur-3xl" />
-      <div className="pointer-events-none absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-cyan-300/25 blur-3xl" />
+    <div className="relative min-h-screen overflow-hidden px-4 py-6" style={{ background: '#F8F6F3' }}>
+      {/* ── Radial rotating card wheel ── */}
+      <div className="radial-marquee">
+        {CAMPUS_CARDS.map((card, i) => {
+          const angle = (360 / CARD_COUNT) * i;
+          const rad = (angle * Math.PI) / 180;
+          const x = Math.cos(rad) * CARD_RADIUS;
+          const y = Math.sin(rad) * CARD_RADIUS;
+          return (
+            <div
+              key={i}
+              className={`radial-card ${card.color}`}
+              style={{
+                transform: `translate(${x - 80}px, ${y - 55}px) rotate(${-angle}deg)`,
+              }}
+            >
+              <span className="card-emoji">{card.emoji}</span>
+              <span className="card-label">{card.label}</span>
+            </div>
+          );
+        })}
+      </div>
 
-      <div className="relative mx-auto w-full max-w-6xl">
-        <div className="mb-8 flex items-center justify-between rounded-3xl border border-white/50 bg-white/45 px-5 py-4 shadow-[0_8px_32px_rgba(15,23,42,0.12)] backdrop-blur-xl">
-          <div className="flex items-center gap-3">
-            <div className="rounded-xl bg-blue-600 p-2.5">
-              <GraduationCap className="h-5 w-5 text-white" />
+      {/* Vignette overlay */}
+      <div className="radial-vignette" />
+
+      <div className="relative mx-auto w-full max-w-5xl" style={{ zIndex: 2 }}>
+        {/* ── Pill Navbar ── */}
+        <div className="mb-8 flex items-center justify-between floating-nav px-4 py-3 max-w-2xl mx-auto">
+          <button onClick={onGoHome} className="flex items-center gap-2.5 pl-2 hover:opacity-70 transition-opacity cursor-pointer">
+            <div className="bg-[#1A1A2E] p-1.5 rounded-xl">
+              <GraduationCap className="h-4 w-4 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-slate-900">Let'sFix</h1>
-              <p className="text-xs text-slate-500">Campus Issue Resolution Platform</p>
-            </div>
-          </div>
+            <span className="font-archivo font-bold text-[#1A1A2E]">Let'sFix</span>
+          </button>
 
           {authPage === 'role-select' ? (
             <div className="flex items-center gap-2">
               <button
-                onClick={() => openAuthPage('sign-in')}
-                className="rounded-xl border border-white/60 bg-white/60 px-4 py-2 text-sm font-semibold text-slate-700 transition hover:-translate-y-0.5 hover:bg-white/80"
+                onClick={() => goToAuth('sign-in')}
+                className="px-4 py-2 text-sm font-semibold text-[#1A1A2E]/70 hover:text-[#1A1A2E] rounded-full hover:bg-black/5 transition-all"
               >
                 Sign In
               </button>
               <button
-                onClick={() => openAuthPage('sign-up')}
-                className="rounded-xl bg-blue-600/90 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:-translate-y-0.5 hover:bg-blue-700"
+                onClick={() => goToAuth('sign-up')}
+                className="btn-pill-primary !py-2 !px-5 !text-sm"
               >
                 Sign Up
               </button>
             </div>
           ) : (
-            <span className="rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold text-blue-700">
-              {selectedRoleConfig?.title}
-            </span>
+            <div className="flex items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1A1A2E]/5 text-xs font-semibold text-[#1A1A2E]/60">
+                {selectedRoleConfig?.title}
+              </span>
+            </div>
           )}
         </div>
 
-        <div className="mb-6 grid grid-cols-1 gap-4 rounded-3xl border border-white/50 bg-white/40 p-6 shadow-[0_10px_30px_rgba(15,23,42,0.1)] backdrop-blur-xl lg:grid-cols-3">
-          <div className="lg:col-span-2">
-            <h2 className="text-3xl font-bold text-slate-900">Professional campus issue reporting for every role</h2>
-            <p className="mt-2 text-slate-700">
-              Students report and vote, administrators verify, and administration resolves with transparent tracking.
-            </p>
-          </div>
-          <div className="rounded-2xl border border-white/60 bg-white/55 p-4 shadow-sm backdrop-blur-xl">
-            <p className="text-sm font-semibold text-slate-800">Built for fast campus action</p>
-            <p className="mt-1 text-xs text-slate-600">
-              Clear workflows, verified updates, and transparent resolution status.
-            </p>
-          </div>
-        </div>
-
-        {/* Auth Content */}
-        <div className="mb-6 rounded-3xl border border-white/50 bg-white/50 p-8 shadow-[0_20px_50px_rgba(15,23,42,0.14)] backdrop-blur-xl">
-          {authPage === 'role-select' && (
-            <>
-              <h2 className="text-2xl font-semibold text-gray-900 mb-3">Welcome to Let'sFix</h2>
-            </>
-          )}
-
-          {authPage !== 'role-select' && (
-            <>
-              <div className="flex items-center justify-between mb-6">
-                <button
-                  onClick={resetToRoleSelect}
-                  className="inline-flex items-center gap-2 text-sm font-medium text-gray-600 hover:text-gray-900"
-                >
-                  <ArrowLeft className="w-4 h-4" />
-                  Back
-                </button>
-                <span className="text-sm text-gray-500">{selectedRoleConfig?.title}</span>
-              </div>
-
-              <h2 className="text-2xl font-semibold text-gray-900 mb-2">
-                {authPage === 'sign-in' ? `Sign In - ${selectedRoleConfig?.title}` : `Sign Up - ${selectedRoleConfig?.title}`}
-              </h2>
-              <p className="text-gray-600 mb-6">
-                {authPage === 'sign-in'
-                  ? 'Use your registered credentials to continue.'
-                  : 'Create a new account for your role.'}
-              </p>
-
-              {errorMessage && (
-                <div className="mb-4 rounded-xl border border-red-200/70 bg-red-50/80 px-4 py-3 text-sm text-red-700 backdrop-blur">
-                  {errorMessage}
-                </div>
-              )}
-              {successMessage && (
-                <div className="mb-4 rounded-xl border border-green-200/70 bg-green-50/80 px-4 py-3 text-sm text-green-700 backdrop-blur">
-                  {successMessage}
-                </div>
-              )}
-
-              {authPage === 'sign-in' ? (
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Email</label>
-                    <input
-                      type="email"
-                      value={signInForm.email}
-                      onChange={(event) => setSignInForm(prev => ({ ...prev, email: event.target.value }))}
-                      className="w-full rounded-xl border border-white/70 bg-white/80 px-3 py-2.5 shadow-sm focus:border-blue-500 focus:outline-none"
-                      placeholder="name@college.edu"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                    <div className="relative">
-                      <input
-                        type={showSignInPassword ? 'text' : 'password'}
-                        value={signInForm.password}
-                        onChange={(event) => setSignInForm(prev => ({ ...prev, password: event.target.value }))}
-                        className="w-full rounded-xl border border-white/70 bg-white/80 px-3 py-2.5 pr-11 shadow-sm focus:border-blue-500 focus:outline-none"
-                        placeholder="Enter password"
-                        required
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowSignInPassword(prev => !prev)}
-                        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-500 hover:text-gray-800"
-                        aria-label={showSignInPassword ? 'Hide password' : 'Show password'}
-                      >
-                        {showSignInPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full rounded-xl bg-blue-600/95 px-6 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700"
-                  >
-                    {isSubmitting ? 'Signing In...' : 'Sign In'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openAuthPage('sign-up')}
-                    className="w-full text-sm text-blue-700 hover:text-blue-900"
-                  >
-                    Need an account? Sign up
-                  </button>
-                </form>
-              ) : (
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
-                    <input
-                      type="text"
-                      value={signUpForm.name}
-                      onChange={(event) => setSignUpForm(prev => ({ ...prev, name: event.target.value }))}
-                      className="w-full rounded-xl border border-white/70 bg-white/80 px-3 py-2.5 shadow-sm focus:border-blue-500 focus:outline-none"
-                      placeholder="Enter full name"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">College Email</label>
-                    <div className="flex flex-col sm:flex-row gap-2">
-                      <input
-                        type="email"
-                        value={signUpForm.email}
-                        onChange={(event) => {
-                          setSignUpForm(prev => ({ ...prev, email: event.target.value }));
-                          if (selectedRole === 'student') {
-                            setIsStudentEmailVerified(false);
-                          }
-                        }}
-                        className="w-full rounded-xl border border-white/70 bg-white/80 px-3 py-2.5 shadow-sm focus:border-blue-500 focus:outline-none"
-                        placeholder={selectedRole === 'student' ? 'rollno@grietcollege.com' : 'name@college.edu'}
-                        required
-                      />
-                      {selectedRole === 'student' && (
-                        <button
-                          type="button"
-                          onClick={handleStudentEmailVerification}
-                          className="sm:w-auto w-full whitespace-nowrap rounded-xl border border-blue-500/60 bg-blue-50/70 px-4 py-2.5 text-sm font-semibold text-blue-700 transition hover:bg-blue-100/80"
-                        >
-                          Verify Email
-                        </button>
-                      )}
-                    </div>
-                    {selectedRole === 'student' && (
-                      <p className="mt-1 text-xs text-gray-500">
-                        Students must verify email in this format: `rollno@grietcollege.com`.
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {selectedRole === 'student' ? 'College ID' : 'Employee ID'}
-                    </label>
-                    <input
-                      type="text"
-                      value={signUpForm.collegeId}
-                      onChange={(event) => setSignUpForm(prev => ({ ...prev, collegeId: event.target.value }))}
-                      className="w-full rounded-xl border border-white/70 bg-white/80 px-3 py-2.5 shadow-sm focus:border-blue-500 focus:outline-none"
-                      placeholder={selectedRole === 'student' ? 'e.g. CS2021001' : 'e.g. ADMIN001'}
-                      required
-                    />
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
-                      <div className="relative">
-                        <input
-                          type={showSignUpPassword ? 'text' : 'password'}
-                          value={signUpForm.password}
-                          onChange={(event) => setSignUpForm(prev => ({ ...prev, password: event.target.value }))}
-                          className="w-full rounded-xl border border-white/70 bg-white/80 px-3 py-2.5 pr-11 shadow-sm focus:border-blue-500 focus:outline-none"
-                          placeholder="Minimum 6 characters"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowSignUpPassword(prev => !prev)}
-                          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-500 hover:text-gray-800"
-                          aria-label={showSignUpPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showSignUpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">Confirm Password</label>
-                      <div className="relative">
-                        <input
-                          type={showConfirmPassword ? 'text' : 'password'}
-                          value={signUpForm.confirmPassword}
-                          onChange={(event) => setSignUpForm(prev => ({ ...prev, confirmPassword: event.target.value }))}
-                          className="w-full rounded-xl border border-white/70 bg-white/80 px-3 py-2.5 pr-11 shadow-sm focus:border-blue-500 focus:outline-none"
-                          placeholder="Re-enter password"
-                          required
-                        />
-                        <button
-                          type="button"
-                          onClick={() => setShowConfirmPassword(prev => !prev)}
-                          className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-gray-500 hover:text-gray-800"
-                          aria-label={showConfirmPassword ? 'Hide password' : 'Show password'}
-                        >
-                          {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="w-full rounded-xl bg-blue-600/95 px-6 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700"
-                  >
-                    {isSubmitting ? 'Creating Account...' : 'Create Account'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => openAuthPage('sign-in')}
-                    className="w-full text-sm text-blue-700 hover:text-blue-900"
-                  >
-                    Already have an account? Sign in
-                  </button>
-                </form>
-              )}
-            </>
-          )}
-        </div>
-
-        {/* Info Section */}
-        <div className="rounded-3xl border border-white/50 bg-white/45 p-6 shadow-[0_12px_30px_rgba(15,23,42,0.1)] backdrop-blur-xl">
-          <h3 className="font-semibold text-blue-900 mb-3">How it works:</h3>
-          <ul className="space-y-2 text-blue-800 text-sm">
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-fit">Mon-Fri:</span>
-              <span>Students report campus issues with details and images</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-fit">Saturday:</span>
-              <span>Vote on the most critical issue that needs immediate attention</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-fit">Admins:</span>
-              <span>Verify reports and manage the weekly voting process</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="font-semibold min-w-fit">Administration:</span>
-              <span>Track and resolve priority issues transparently</span>
-            </li>
-          </ul>
-        </div>
-      </div>
-
-      {rolePickerIntent && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/35 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-4xl rounded-3xl border border-white/50 bg-white/55 p-6 shadow-[0_24px_50px_rgba(15,23,42,0.2)] backdrop-blur-2xl">
-            <div className="mb-6 flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-slate-900">
-                Select Role to {rolePickerIntent === 'sign-in' ? 'Sign In' : 'Sign Up'}
-              </h3>
-              <button
-                onClick={() => setRolePickerIntent(null)}
-                className="rounded-xl border border-white/70 bg-white/70 px-3 py-1.5 text-sm font-medium text-slate-700 transition hover:bg-white"
-              >
-                Close
-              </button>
+        {/* ── ROLE SELECT PAGE ── */}
+        {authPage === 'role-select' && (
+          <div className="max-w-2xl mx-auto">
+            {/* Heading */}
+            <div className="auth-card p-8 sm:p-10 text-center mb-6">
+              <h2 className="font-archivo font-black text-[#1A1A2E] text-2xl sm:text-3xl">Welcome to Let'sFix</h2>
+              <p className="text-[#1A1A2E]/50 mt-2 text-sm">Choose your role to get started</p>
             </div>
 
-            <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            {/* Role Cards — always visible */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
               {ROLE_CONFIG.map((role) => {
                 const Icon = role.icon;
                 const isSelected = selectedRole === role.type;
-
                 return (
                   <button
                     key={role.type}
                     onClick={() => setSelectedRole(role.type)}
-                    className={`rounded-2xl border p-5 text-left transition-all ${
-                      isSelected
-                        ? 'border-blue-400 bg-blue-50/80 shadow-lg'
-                        : 'border-white/60 bg-white/55 hover:-translate-y-0.5 hover:shadow-md'
-                    }`}
+                    className={`role-card ${isSelected ? 'selected' : ''}`}
                   >
-                    <div className={`${role.color} mb-3 inline-flex h-11 w-11 items-center justify-center rounded-lg`}>
-                      <Icon className="h-6 w-6 text-white" />
+                    <div className={`feature-icon ${role.iconBg} ${role.iconColor} mb-3`}>
+                      <Icon className="h-5 w-5" />
                     </div>
-                    <h4 className="font-semibold text-gray-900">{role.title}</h4>
-                    <p className="mt-1 text-sm text-gray-600">{role.description}</p>
+                    <h4 className="font-archivo font-bold text-[#1A1A2E] text-base">{role.title}</h4>
+                    <p className="mt-1 text-sm text-[#1A1A2E]/45">{role.description}</p>
                   </button>
                 );
               })}
             </div>
 
-            <div className="mt-6 flex justify-end">
-              <button
-                onClick={handleRoleSelectionConfirm}
-                className="rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white hover:bg-blue-700"
-              >
-                Continue as {selectedRoleConfig?.title}
+            {/* Action buttons */}
+            <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+              <button onClick={() => goToAuth('sign-in')} className="btn-pill-primary w-full sm:w-auto justify-center !py-3 !px-8">
+                Sign In as {selectedRoleConfig?.title} <ArrowRight className="w-4 h-4" />
+              </button>
+              <button onClick={() => goToAuth('sign-up')} className="btn-pill-secondary w-full sm:w-auto justify-center !py-3 !px-8">
+                Create Account
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+
+        {/* ── SIGN IN / SIGN UP FORM ── */}
+        {authPage !== 'role-select' && (
+          <div className="auth-card max-w-xl mx-auto p-8 sm:p-10">
+            <div className="flex items-center justify-between mb-6">
+              <button
+                onClick={resetToRoleSelect}
+                className="inline-flex items-center gap-2 text-sm font-medium text-[#1A1A2E]/50 hover:text-[#1A1A2E] rounded-full px-3 py-1.5 hover:bg-black/5 transition-all"
+              >
+                <ArrowLeft className="w-4 h-4" />
+                Back
+              </button>
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[#1A1A2E]/5 text-xs font-semibold text-[#1A1A2E]/60">
+                {selectedRoleConfig?.title}
+              </span>
+            </div>
+
+            <h2 className="font-archivo font-black text-[#1A1A2E] text-2xl mb-1">
+              {authPage === 'sign-in' ? 'Sign In' : 'Create Account'}
+            </h2>
+            <p className="text-[#1A1A2E]/45 mb-6 text-sm">
+              {authPage === 'sign-in'
+                ? 'Use your registered credentials to continue.'
+                : 'Create a new account for your role.'}
+            </p>
+
+            {errorMessage && (
+              <div className="mb-4 rounded-2xl bg-red-50 border border-red-200/60 px-4 py-3 text-sm text-red-700">
+                {errorMessage}
+              </div>
+            )}
+            {successMessage && (
+              <div className="mb-4 rounded-2xl bg-green-50 border border-green-200/60 px-4 py-3 text-sm text-green-700 flex items-center gap-2">
+                <CheckCircle className="w-4 h-4" />
+                {successMessage}
+              </div>
+            )}
+
+            {authPage === 'sign-in' ? (
+              <form onSubmit={handleSignIn} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#1A1A2E]/70 mb-1.5">Email</label>
+                  <input
+                    type="email"
+                    value={signInForm.email}
+                    onChange={(e) => setSignInForm(prev => ({ ...prev, email: e.target.value }))}
+                    className="auth-input"
+                    placeholder="name@grietcollege.com"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#1A1A2E]/70 mb-1.5">Password</label>
+                  <div className="relative">
+                    <input
+                      type={showSignInPassword ? 'text' : 'password'}
+                      value={signInForm.password}
+                      onChange={(e) => setSignInForm(prev => ({ ...prev, password: e.target.value }))}
+                      className="auth-input !pr-11"
+                      placeholder="Enter password"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowSignInPassword(prev => !prev)}
+                      className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#1A1A2E]/30 hover:text-[#1A1A2E]/60 transition-colors"
+                    >
+                      {showSignInPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="btn-pill-primary w-full justify-center !py-3.5 !text-base mt-2">
+                  {isSubmitting ? 'Signing In...' : 'Sign In'}
+                  {!isSubmitting && <ArrowRight className="w-4 h-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goToAuth('sign-up')}
+                  className="w-full text-sm text-[#1A1A2E]/50 hover:text-[#1A1A2E] font-medium py-2 transition-colors"
+                >
+                  Need an account? <span className="font-semibold underline underline-offset-2">Sign up</span>
+                </button>
+              </form>
+            ) : (
+              <form onSubmit={handleSignUp} className="space-y-4">
+                <div>
+                  <label className="block text-sm font-semibold text-[#1A1A2E]/70 mb-1.5">Full Name</label>
+                  <input
+                    type="text"
+                    value={signUpForm.name}
+                    onChange={(e) => setSignUpForm(prev => ({ ...prev, name: e.target.value }))}
+                    className="auth-input"
+                    placeholder="Enter full name"
+                    required
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#1A1A2E]/70 mb-1.5">College Email</label>
+                  <div className="flex flex-col sm:flex-row gap-2">
+                    <input
+                      type="email"
+                      value={signUpForm.email}
+                      onChange={(e) => {
+                        setSignUpForm(prev => ({ ...prev, email: e.target.value }));
+                        if (selectedRole === 'student') setIsStudentEmailVerified(false);
+                      }}
+                      className="auth-input"
+                      placeholder={selectedRole === 'student' ? 'rollno@grietcollege.com' : 'name@college.edu'}
+                      required
+                    />
+                    {selectedRole === 'student' && (
+                      <button
+                        type="button"
+                        onClick={handleStudentEmailVerification}
+                        className="btn-pill-secondary !py-2.5 !px-5 !text-sm whitespace-nowrap"
+                      >
+                        {isStudentEmailVerified ? <><CheckCircle className="w-4 h-4 text-green-600" /> Verified</> : 'Verify'}
+                      </button>
+                    )}
+                  </div>
+                  {selectedRole === 'student' && (
+                    <p className="mt-1.5 text-xs text-[#1A1A2E]/40">Format: rollno@grietcollege.com</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-[#1A1A2E]/70 mb-1.5">
+                    {selectedRole === 'student' ? 'College ID' : 'Employee ID'}
+                  </label>
+                  <input
+                    type="text"
+                    value={signUpForm.collegeId}
+                    onChange={(e) => setSignUpForm(prev => ({ ...prev, collegeId: e.target.value }))}
+                    className="auth-input"
+                    placeholder={selectedRole === 'student' ? 'e.g. CS2021001' : 'e.g. ADMIN001'}
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div>
+                    <label className="block text-sm font-semibold text-[#1A1A2E]/70 mb-1.5">Password</label>
+                    <div className="relative">
+                      <input
+                        type={showSignUpPassword ? 'text' : 'password'}
+                        value={signUpForm.password}
+                        onChange={(e) => setSignUpForm(prev => ({ ...prev, password: e.target.value }))}
+                        className="auth-input !pr-11"
+                        placeholder="Min 6 characters"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowSignUpPassword(prev => !prev)}
+                        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#1A1A2E]/30 hover:text-[#1A1A2E]/60"
+                      >
+                        {showSignUpPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-sm font-semibold text-[#1A1A2E]/70 mb-1.5">Confirm</label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        value={signUpForm.confirmPassword}
+                        onChange={(e) => setSignUpForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                        className="auth-input !pr-11"
+                        placeholder="Re-enter"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(prev => !prev)}
+                        className="absolute inset-y-0 right-0 flex w-11 items-center justify-center text-[#1A1A2E]/30 hover:text-[#1A1A2E]/60"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+                <button type="submit" disabled={isSubmitting} className="btn-pill-primary w-full justify-center !py-3.5 !text-base mt-2">
+                  {isSubmitting ? 'Creating Account...' : 'Create Account'}
+                  {!isSubmitting && <ArrowRight className="w-4 h-4" />}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => goToAuth('sign-in')}
+                  className="w-full text-sm text-[#1A1A2E]/50 hover:text-[#1A1A2E] font-medium py-2 transition-colors"
+                >
+                  Already have an account? <span className="font-semibold underline underline-offset-2">Sign in</span>
+                </button>
+              </form>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -1,0 +1,397 @@
+/* ═══════════════════════════════════════════
+   Let'sFix — Reasonal.co-Inspired Styles
+   Pastel color-blocked · Pill-shaped · Light theme
+   ═══════════════════════════════════════════ */
+
+html {
+    scroll-behavior: smooth;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+/* ── Typography ── */
+.font-archivo {
+    font-family: 'Archivo', 'Inter', system-ui, sans-serif;
+}
+
+/* ── Pastel section backgrounds ── */
+.bg-pastel-blue {
+    background-color: #B6E0FE;
+}
+
+.bg-pastel-peach {
+    background-color: #FCE1CC;
+}
+
+.bg-pastel-green {
+    background-color: #C9E4CA;
+}
+
+.bg-pastel-lavender {
+    background-color: #D6CFEA;
+}
+
+.bg-pastel-cream {
+    background-color: #FFF7ED;
+}
+
+.bg-pastel-rose {
+    background-color: #F9D5E5;
+}
+
+.bg-pastel-mint {
+    background-color: #D0F0E0;
+}
+
+.bg-charcoal {
+    background-color: #1A1A2E;
+}
+
+/* ── Color-blocked section ── */
+.section-block {
+    border-radius: 2.5rem;
+    padding: 3.5rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+}
+
+@media (min-width: 768px) {
+    .section-block {
+        border-radius: 3rem;
+        padding: 5rem 4rem;
+    }
+}
+
+/* ── Pill containers ── */
+.pill-card {
+    border-radius: 2rem;
+    padding: 2rem;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.pill-card:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08);
+}
+
+/* ── Pill buttons ── */
+.btn-pill-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    background-color: #1A1A2E;
+    color: #ffffff;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    border-radius: 9999px;
+    transition: all 0.2s ease;
+    border: none;
+    cursor: pointer;
+}
+
+.btn-pill-primary:hover {
+    background-color: #2d2d44;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(26, 26, 46, 0.25);
+}
+
+.btn-pill-secondary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.875rem 2rem;
+    background-color: transparent;
+    color: #1A1A2E;
+    font-weight: 600;
+    font-size: 0.9375rem;
+    border-radius: 9999px;
+    border: 2px solid rgba(26, 26, 46, 0.15);
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-pill-secondary:hover {
+    background-color: rgba(26, 26, 46, 0.06);
+    border-color: rgba(26, 26, 46, 0.3);
+    transform: translateY(-2px);
+}
+
+/* ── Floating pill navbar ── */
+.floating-nav {
+    background: rgba(255, 255, 255, 0.92);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 9999px;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.08);
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+}
+
+.floating-nav:hover {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+}
+
+/* ── Scroll indicator bounce ── */
+@keyframes bounce-down {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(10px);
+    }
+}
+
+.scroll-indicator {
+    animation: bounce-down 2s ease-in-out infinite;
+}
+
+/* ── Gradient text ── */
+.gradient-text-warm {
+    background: linear-gradient(135deg, #1A1A2E 0%, #6366f1 60%, #ec4899 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+/* ── Timeline step connector ── */
+.step-connector {
+    width: 3px;
+    background: linear-gradient(to bottom, #1A1A2E, #6366f1);
+    border-radius: 9999px;
+}
+
+/* ── FAQ Accordion ── */
+.faq-item {
+    background: rgba(255, 255, 255, 0.7);
+    border-radius: 1.25rem;
+    padding: 1.5rem 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+
+.faq-item:hover {
+    background: rgba(255, 255, 255, 0.9);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+/* ── Testimonial card ── */
+.testimonial-pill {
+    background: rgba(255, 255, 255, 0.6);
+    border-radius: 1.5rem;
+    padding: 2rem;
+    border: 1px solid rgba(0, 0, 0, 0.05);
+}
+
+/* ── Auth page card ── */
+.auth-card {
+    background: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-radius: 2.5rem;
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
+}
+
+.auth-input {
+    width: 100%;
+    padding: 0.875rem 1.25rem;
+    background: rgba(255, 255, 255, 0.8);
+    border: 1.5px solid rgba(0, 0, 0, 0.1);
+    border-radius: 1rem;
+    font-size: 0.9375rem;
+    color: #1A1A2E;
+    transition: all 0.2s ease;
+    outline: none;
+}
+
+.auth-input:focus {
+    border-color: #6366f1;
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+}
+
+.auth-input::placeholder {
+    color: rgba(26, 26, 46, 0.4);
+}
+
+/* ── Role card in auth ── */
+.role-card {
+    border-radius: 1.5rem;
+    padding: 1.5rem;
+    border: 2px solid rgba(0, 0, 0, 0.06);
+    background: rgba(255, 255, 255, 0.6);
+    transition: all 0.2s ease;
+    cursor: pointer;
+    text-align: left;
+}
+
+.role-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+}
+
+.role-card.selected {
+    border-color: #6366f1;
+    background: rgba(99, 102, 241, 0.06);
+    box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.12);
+}
+
+/* ── Feature icon circle ── */
+.feature-icon {
+    width: 3.5rem;
+    height: 3.5rem;
+    border-radius: 1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ── Floating orb for auth bg ── */
+@keyframes float-orb {
+
+    0%,
+    100% {
+        transform: translate(0, 0) scale(1);
+    }
+
+    33% {
+        transform: translate(20px, -15px) scale(1.03);
+    }
+
+    66% {
+        transform: translate(-15px, 10px) scale(0.97);
+    }
+}
+
+.orb-auth {
+    animation: float-orb 10s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════
+   Radial Marquee — Rotating card wheel
+   (Inspired by osmo.supply/login)
+   ═══════════════════════════════════════════ */
+
+@keyframes spin-wheel {
+    from {
+        transform: translate(-50%, -50%) rotate(0deg);
+    }
+
+    to {
+        transform: translate(-50%, -50%) rotate(360deg);
+    }
+}
+
+/* Container: centered circle that rotates */
+.radial-marquee {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    animation: spin-wheel 80s linear infinite;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Individual card positioned along the circle */
+.radial-card {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 160px;
+    height: 110px;
+    border-radius: 1.25rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.10);
+    border: 1px solid rgba(0, 0, 0, 0.06);
+    font-family: 'Archivo', 'Inter', system-ui, sans-serif;
+    transition: opacity 0.3s ease;
+}
+
+.radial-card .card-emoji {
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.radial-card .card-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #1A1A2E;
+    opacity: 0.7;
+    text-align: center;
+    padding: 0 0.5rem;
+}
+
+/* Vignette overlay — fades the edges to spotlight the center form */
+.radial-vignette {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse 55% 55% at 50% 50%,
+        transparent 0%,
+        rgba(248, 246, 243, 0.5) 50%,
+        rgba(248, 246, 243, 0.85) 70%,
+        #F8F6F3 90%
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+/* Card color variants */
+.radial-card.card-blue {
+    background: linear-gradient(135deg, #B6E0FE 0%, #d4edff 100%);
+}
+
+.radial-card.card-peach {
+    background: linear-gradient(135deg, #FCE1CC 0%, #fdeee0 100%);
+}
+
+.radial-card.card-green {
+    background: linear-gradient(135deg, #C9E4CA 0%, #e2f3e3 100%);
+}
+
+.radial-card.card-lavender {
+    background: linear-gradient(135deg, #D6CFEA 0%, #e9e4f5 100%);
+}
+
+.radial-card.card-rose {
+    background: linear-gradient(135deg, #F9D5E5 0%, #fce8f0 100%);
+}
+
+.radial-card.card-mint {
+    background: linear-gradient(135deg, #D0F0E0 0%, #e4f7ee 100%);
+}
+
+.radial-card.card-cream {
+    background: linear-gradient(135deg, #FFF7ED 0%, #fffaf5 100%);
+}
+
+.radial-card.card-sky {
+    background: linear-gradient(135deg, #BAE6FD 0%, #daf2fe 100%);
+}
+
+/* Responsive: smaller cards on mobile */
+@media (max-width: 640px) {
+    .radial-card {
+        width: 120px;
+        height: 85px;
+    }
+
+    .radial-card .card-emoji {
+        font-size: 1.35rem;
+    }
+
+    .radial-card .card-label {
+        font-size: 0.6rem;
+    }
+}
