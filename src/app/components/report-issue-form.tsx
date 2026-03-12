@@ -12,7 +12,7 @@ interface ReportIssueFormProps {
       floor: string;
       room: string;
     };
-  }) => void;
+  }) => Promise<string | null>;
   onCancel: () => void;
 }
 
@@ -25,6 +25,8 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
     floor: '',
     room: ''
   });
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
 
   const categories: IssueCategory[] = [
     'Broken Furniture',
@@ -38,15 +40,17 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
   const blocks = ['Block A', 'Block B', 'Block C', 'Block D', 'Main Building', 'Library Building'];
   const floors = ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor'];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    setErrorMessage('');
     
     if (!formData.title || !formData.description || !formData.block || !formData.floor || !formData.room) {
-      alert('Please fill in all required fields');
+      setErrorMessage('Please fill in all required fields');
       return;
     }
 
-    onSubmit({
+    setIsSubmitting(true);
+    const error = await onSubmit({
       title: formData.title,
       description: formData.description,
       category: formData.category,
@@ -56,6 +60,11 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
         room: formData.room
       }
     });
+    setIsSubmitting(false);
+
+    if (error) {
+      setErrorMessage(error);
+    }
   };
 
   return (
@@ -74,6 +83,11 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="p-6 space-y-6">
+          {errorMessage && (
+            <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+              {errorMessage}
+            </div>
+          )}
           {/* Issue Title */}
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -202,9 +216,10 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
             </button>
             <button
               type="submit"
+              disabled={isSubmitting}
               className="flex-1 px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors"
             >
-              Submit Issue
+              {isSubmitting ? 'Submitting...' : 'Submit Issue'}
             </button>
           </div>
         </form>

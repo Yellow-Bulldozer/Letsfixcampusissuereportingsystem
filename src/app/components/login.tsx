@@ -3,14 +3,14 @@ import { UserRole } from '../types';
 import { ArrowLeft, Eye, EyeOff, GraduationCap, Shield, UserCog } from 'lucide-react';
 
 interface LoginProps {
-  onSignIn: (email: string, password: string, role: UserRole) => string | null;
+  onSignIn: (email: string, password: string, role: UserRole) => Promise<string | null>;
   onSignUp: (payload: {
     name: string;
     email: string;
     collegeId: string;
     password: string;
     role: UserRole;
-  }) => string | null;
+  }) => Promise<string | null>;
 }
 
 type AuthPage = 'role-select' | 'sign-in' | 'sign-up';
@@ -63,6 +63,7 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
   const [showSignInPassword, setShowSignInPassword] = useState(false);
   const [showSignUpPassword, setShowSignUpPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const selectedRoleConfig = useMemo(
     () => ROLE_CONFIG.find(role => role.type === selectedRole),
@@ -91,10 +92,12 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
     setRolePickerIntent(null);
   };
 
-  const handleSignIn = (event: FormEvent<HTMLFormElement>) => {
+  const handleSignIn = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     resetMessages();
-    const error = onSignIn(signInForm.email.trim(), signInForm.password, selectedRole);
+    setIsSubmitting(true);
+    const error = await onSignIn(signInForm.email.trim(), signInForm.password, selectedRole);
+    setIsSubmitting(false);
     if (error) {
       setErrorMessage(error);
       return;
@@ -114,7 +117,7 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
     setSuccessMessage('College email verified.');
   };
 
-  const handleSignUp = (event: FormEvent<HTMLFormElement>) => {
+  const handleSignUp = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     resetMessages();
 
@@ -138,13 +141,15 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
       return;
     }
 
-    const error = onSignUp({
+    setIsSubmitting(true);
+    const error = await onSignUp({
       name: signUpForm.name.trim(),
       email: signUpForm.email.trim().toLowerCase(),
       collegeId: signUpForm.collegeId.trim(),
       password: signUpForm.password,
       role: selectedRole
     });
+    setIsSubmitting(false);
 
     if (error) {
       setErrorMessage(error);
@@ -286,9 +291,10 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
                   </div>
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full rounded-xl bg-blue-600/95 px-6 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700"
                   >
-                    Sign In
+                    {isSubmitting ? 'Signing In...' : 'Sign In'}
                   </button>
                   <button
                     type="button"
@@ -402,9 +408,10 @@ export function Login({ onSignIn, onSignUp }: LoginProps) {
                   </div>
                   <button
                     type="submit"
+                    disabled={isSubmitting}
                     className="w-full rounded-xl bg-blue-600/95 px-6 py-3 font-semibold text-white transition hover:-translate-y-0.5 hover:bg-blue-700"
                   >
-                    Create Account
+                    {isSubmitting ? 'Creating Account...' : 'Create Account'}
                   </button>
                   <button
                     type="button"

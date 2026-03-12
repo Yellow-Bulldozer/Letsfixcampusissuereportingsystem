@@ -1,6 +1,5 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { User, Issue, UserRole, IssueStatus, Vote } from './types';
-import { mockUsers, mockIssues, mockVotes } from './data/mock-data';
 import { Login } from './components/login';
 import { Header } from './components/header';
 import { StudentDashboard } from './components/student-dashboard';
@@ -12,77 +11,140 @@ import { Profile } from './components/profile';
 import { PostLoginContent } from './components/post-login-content';
 import { isSaturday, isWeekday } from './utils/date-utils';
 import { Calendar, LayoutDashboard, Vote as VoteIcon, UserCircle } from 'lucide-react';
+import {
+  castVote,
+  clearToken,
+  createIssue,
+  getActivePoll,
+  getCurrentUser,
+  getIssues,
+  getMyVoteIssueId,
+  login,
+  registerStudent,
+  setToken,
+  updateIssueStatus,
+  verifyIssue
+} from './lib/api';
 
 const STUDENT_EMAIL_REGEX = /^[a-z0-9]+@grietcollege\.com$/i;
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
-  const [users, setUsers] = useState<User[]>(mockUsers);
-  const [passwordByUserId, setPasswordByUserId] = useState<Record<string, string>>({
-    student1: 'student123',
-    admin1: 'admin123',
-    authority1: 'authority123'
-  });
-  const [issues, setIssues] = useState<Issue[]>(mockIssues);
-  const [votes, setVotes] = useState<Vote[]>(mockVotes);
+  const [issues, setIssues] = useState<Issue[]>([]);
+  const [votes, setVotes] = useState<Vote[]>([]);
+  const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [showReportForm, setShowReportForm] = useState(false);
   const [showPostLoginContent, setShowPostLoginContent] = useState(false);
   const [activeTab, setActiveTab] = useState<'dashboard' | 'voting' | 'profile'>('dashboard');
+  const [userVotedIssueId, setUserVotedIssueId] = useState<string | null>(null);
 
-  const handleSignIn = (email: string, password: string, role: UserRole): string | null => {
-    const normalizedEmail = email.trim().toLowerCase();
-    const matchedUser = users.find(
-      user => user.email.toLowerCase() === normalizedEmail && user.role === role
-    );
+  const hydrateDashboard = async (user: User) => {
+    const [issuesFromApi, pollVoteMap] = await Promise.all([
+      getIssues(),
+      getActivePoll()
+    ]);
 
-    if (!matchedUser) {
-      return 'No account found for this role and email.';
+    const mergedIssues = issuesFromApi.map((issue) => ({
+      ...issue,
+      votes: pollVoteMap.get(issue.id) ?? issue.votes
+    }));
+
+    setIssues(mergedIssues);
+
+    if (user.role === 'student') {
+      const myVotedIssueId = await getMyVoteIssueId();
+      setUserVotedIssueId(myVotedIssueId);
+      setVotes(
+        myVotedIssueId
+          ? [{ userId: user.id, issueId: myVotedIssueId, votedAt: new Date() }]
+          : []
+      );
+    } else {
+      setUserVotedIssueId(null);
+      setVotes([]);
     }
-
-    if (passwordByUserId[matchedUser.id] !== password) {
-      return 'Incorrect password.';
-    }
-
-    setCurrentUser(matchedUser);
-    setShowPostLoginContent(true);
-    return null;
   };
 
-  const handleSignUp = (payload: {
+  useEffect(() => {
+    let isMounted = true;
+
+    const bootstrap = async () => {
+      try {
+        const user = await getCurrentUser();
+        if (!isMounted) return;
+        setCurrentUser(user);
+        await hydrateDashboard(user);
+      } catch {
+        clearToken();
+      } finally {
+        if (isMounted) {
+          setIsBootstrapping(false);
+        }
+      }
+    };
+
+    bootstrap();
+
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  const handleSignIn = async (email: string, password: string, role: UserRole): Promise<string | null> => {
+    try {
+      const { token, user } = await login(email.trim().toLowerCase(), password);
+      if (user.role !== role) {
+        return `This account is '${user.role}'. Select the matching role to sign in.`;
+      }
+      setToken(token);
+      setCurrentUser(user);
+      setShowPostLoginContent(true);
+      await hydrateDashboard(user);
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Sign in failed';
+    }
+  };
+
+  const handleSignUp = async (payload: {
     name: string;
     email: string;
     collegeId: string;
     password: string;
     role: UserRole;
-  }): string | null => {
+  }): Promise<string | null> => {
     const normalizedEmail = payload.email.trim().toLowerCase();
-    if (users.some(user => user.email.toLowerCase() === normalizedEmail)) {
-      return 'An account with this email already exists.';
-    }
 
-    if (payload.role === 'student' && !STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
+    if (payload.role !== 'student') {
+      return 'Only student self-signup is enabled. Admin/Authority users must be created in the backend database.';
+    }
+    if (!STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
       return 'Students must sign up using: rollno@grietcollege.com';
     }
 
-    const roleUserCount = users.filter(user => user.role === payload.role).length + 1;
-    const newUserId = `${payload.role}${roleUserCount}`;
-    const newUser: User = {
-      id: newUserId,
-      name: payload.name,
-      email: normalizedEmail,
-      role: payload.role,
-      collegeId: payload.collegeId
-    };
-
-    setUsers(prevUsers => [...prevUsers, newUser]);
-    setPasswordByUserId(prevPasswords => ({ ...prevPasswords, [newUserId]: payload.password }));
-    setCurrentUser(newUser);
-    setShowPostLoginContent(true);
-    return null;
+    try {
+      const { token, user } = await registerStudent({
+        name: payload.name,
+        email: normalizedEmail,
+        password: payload.password,
+        collegeId: payload.collegeId
+      });
+      setToken(token);
+      setCurrentUser(user);
+      setShowPostLoginContent(true);
+      await hydrateDashboard(user);
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Sign up failed';
+    }
   };
 
   const handleLogout = () => {
+    clearToken();
     setCurrentUser(null);
+    setIssues([]);
+    setVotes([]);
+    setUserVotedIssueId(null);
     setActiveTab('dashboard');
     setShowPostLoginContent(false);
   };
@@ -92,65 +154,71 @@ export default function App() {
     setShowReportForm(false);
   };
 
-  const handleReportIssue = (issueData: {
+  const handleReportIssue = async (issueData: {
     title: string;
     description: string;
     category: Issue['category'];
     location: Issue['location'];
-  }) => {
-    const newIssue: Issue = {
-      id: String(issues.length + 1),
-      title: issueData.title,
-      description: issueData.description,
-      category: issueData.category,
-      location: issueData.location,
-      images: [],
-      status: 'pending',
-      reportedBy: currentUser?.name || 'Anonymous',
-      reportedAt: new Date(),
-      votes: 0,
-      updatedAt: new Date()
-    };
-
-    setIssues([newIssue, ...issues]);
-    setShowReportForm(false);
+  }): Promise<string | null> => {
+    if (!currentUser) return 'You must be signed in';
+    try {
+      const issue = await createIssue(issueData);
+      setIssues((prev) => [issue, ...prev]);
+      setShowReportForm(false);
+      return null;
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Unable to submit issue';
+    }
   };
 
   const handleVote = (issueId: string) => {
-    if (!currentUser) return;
+    if (!currentUser || currentUser.role !== 'student' || userVotedIssueId) return;
 
-    // Check if user already voted
-    const existingVote = votes.find(v => v.userId === currentUser.id);
-    if (existingVote) return;
-
-    // Add vote
-    const newVote: Vote = {
-      userId: currentUser.id,
-      issueId: issueId,
-      votedAt: new Date()
-    };
-    setVotes([...votes, newVote]);
-
-    // Update issue vote count
-    setIssues(issues.map(issue => 
-      issue.id === issueId 
-        ? { ...issue, votes: issue.votes + 1 }
-        : issue
-    ));
+    castVote(issueId)
+      .then(() => {
+        setUserVotedIssueId(issueId);
+        setVotes([{ userId: currentUser.id, issueId, votedAt: new Date() }]);
+        setIssues((prevIssues) =>
+          prevIssues.map((issue) =>
+            issue.id === issueId
+              ? { ...issue, votes: issue.votes + 1 }
+              : issue
+          )
+        );
+      })
+      .catch((error) => {
+        alert(error instanceof Error ? error.message : 'Unable to cast vote');
+      });
   };
 
   const handleUpdateStatus = (issueId: string, newStatus: IssueStatus) => {
-    setIssues(issues.map(issue =>
-      issue.id === issueId
-        ? { ...issue, status: newStatus, updatedAt: new Date() }
-        : issue
-    ));
+    const updateCall =
+      newStatus === 'verified'
+        ? verifyIssue(issueId, true)
+        : updateIssueStatus(issueId, newStatus);
+
+    updateCall
+      .then((updatedIssue) => {
+        setIssues((prevIssues) =>
+          prevIssues.map((issue) =>
+            issue.id === issueId
+              ? { ...issue, ...updatedIssue }
+              : issue
+          )
+        );
+      })
+      .catch((error) => {
+        alert(error instanceof Error ? error.message : 'Unable to update status');
+      });
   };
 
-  // Check if current user has voted
-  const userVotedIssueId = currentUser 
-    ? votes.find(v => v.userId === currentUser.id)?.issueId || null
-    : null;
+  if (isBootstrapping) {
+    return (
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <p className="text-gray-600">Loading...</p>
+      </div>
+    );
+  }
 
   if (!currentUser) {
     return <Login onSignIn={handleSignIn} onSignUp={handleSignUp} />;

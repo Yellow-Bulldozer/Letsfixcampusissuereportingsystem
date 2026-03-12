@@ -1,5 +1,4 @@
 const express = require('express');
-const mongoose = require('mongoose');
 const cors = require('cors');
 const helmet = require('helmet');
 const mongoSanitize = require('express-mongo-sanitize');
@@ -17,6 +16,7 @@ const pollRoutes = require('./routes/pollRoutes');
 // Import utilities
 const { startWeeklyPoll } = require('./utils/pollAutomation');
 const errorHandler = require('./middlewares/errorHandler');
+const connectDB = require('./config/db');
 
 // Initialize Express app
 const app = express();
@@ -54,20 +54,6 @@ app.get('/api/health', (req, res) => {
 
 // Error Handler (must be last)
 app.use(errorHandler);
-
-// MongoDB Connection
-const connectDB = async () => {
-  try {
-    const conn = await mongoose.connect(process.env.MONGO_URI, {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    });
-    console.log(`MongoDB Connected: ${conn.connection.host}`);
-  } catch (error) {
-    console.error(`Error: ${error.message}`);
-    process.exit(1);
-  }
-};
 
 // Poll Automation Cron Job
 // Runs every Saturday at midnight (00:00)
