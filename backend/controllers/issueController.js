@@ -438,3 +438,81 @@ exports.deleteIssue = async (req, res, next) => {
     next(error);
   }
 };
+
+/**
+ * @desc    Merge similar issues into one parent issue
+ * @route   POST /api/issues/merge
+ * @access  Private (Admin only)
+ */
+exports.mergeIssues = async (req, res, next) => {
+  try {
+    const { parentId, childIds } = req.body;
+
+    if (!parentId || !childIds || !Array.isArray(childIds) || childIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'parentId and childIds[] are required'
+      });
+    }
+
+    // Ensure parent exists
+    const parentIssue = await Issue.findById(parentId);
+    if (!parentIssue) {
+      return res.status(404).json({
+        success: false,
+        message: 'Parent issue not found'
+      });
+    }
+
+    // Ensure parent is not already merged into another issue
+    if (parentIssue.mergedInto) {
+      return res.status(400).json({
+        success: false,
+        message: 'Parent issue is already merged into another issue'
+      });
+    }
+
+    // Validate all child IDs exist and are not already merged
+    const children = await Issue.find({ _id: { $in: childIds } });
+    if (children.length !== childIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'One or more child issues not found'
+      });
+    }
+
+    const alreadyMerged = children.filter(c => c.mergedInto);
+    if (alreadyMerged.length > 0) {
+      return res.status(400).json({
+        success: false,
+        message: `${alreadyMerged.length} issue(s) are already merged into another issue`
+      });
+    }
+
+    // Mark children as merged into parent
+    await Issue.updateMany(
+      { _id: { $in: childIds } },
+      { $set: { mergedInto: parentId, mergedAt: new Date() } }
+    );
+
+    // Add children to parent's mergedChildren array (avoid duplicates)
+    const existingChildIds = parentIssue.mergedChildren.map(id => id.toString());
+    const newChildIds = childIds.filter(id => !existingChildIds.includes(id));
+    parentIssue.mergedChildren.push(...newChildIds);
+    parentIssue.mergedAt = parentIssue.mergedAt || new Date();
+    await parentIssue.save();
+
+    // Reload parent with populated data
+    const updatedParent = await Issue.findById(parentId)
+      .populate('reportedBy', 'name email department')
+      .populate('mergedChildren', 'title category createdAt');
+
+    res.status(200).json({
+      success: true,
+      message: `${childIds.length} issue(s) merged into "${parentIssue.title}"`,
+      data: updatedParent
+    });
+  } catch (error) {
+    next(error);
+  }
+};

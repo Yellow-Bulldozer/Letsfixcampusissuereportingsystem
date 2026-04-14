@@ -10,13 +10,14 @@ interface VotingSystemProps {
   issues: Issue[];
   userVotedIssueId: string | null;
   onVote: (issueId: string) => void;
+  hasActivePoll?: boolean;
 }
 
-export function VotingSystem({ issues, userVotedIssueId, onVote }: VotingSystemProps) {
+export function VotingSystem({ issues, userVotedIssueId, onVote, hasActivePoll = false }: VotingSystemProps) {
   const [selectedIssueId, setSelectedIssueId] = useState<string | null>(userVotedIssueId);
   const [hasJustVoted, setHasJustVoted] = useState(false);
   const currentDay = getCurrentDay();
-  const isVotingDay = isSaturday();
+  const isVotingDay = isSaturday() || hasActivePoll;
 
   const verifiedIssues = useMemo(() => {
     return issues
@@ -98,7 +99,9 @@ export function VotingSystem({ issues, userVotedIssueId, onVote }: VotingSystemP
       {/* Voting Header */}
       <motion.div
         className="rounded-2xl p-6 text-white relative overflow-hidden"
-        style={{ background: 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)' }}
+        style={{ background: hasActivePoll && !isSaturday()
+          ? 'linear-gradient(135deg, #7c3aed 0%, #6366f1 50%, #3b82f6 100%)'
+          : 'linear-gradient(135deg, #3b82f6 0%, #6366f1 50%, #8b5cf6 100%)' }}
         variants={fadeScale}
         initial="hidden"
         animate="visible"
@@ -109,7 +112,9 @@ export function VotingSystem({ issues, userVotedIssueId, onVote }: VotingSystemP
           <div className="bg-white/20 p-2.5 rounded-xl">
             <Trophy className="w-6 h-6" />
           </div>
-          <h2 className="text-2xl font-bold font-archivo">Weekly Priority Vote</h2>
+          <h2 className="text-2xl font-bold font-archivo">
+            {hasActivePoll && !isSaturday() ? 'Admin Poll — Active Now' : 'Weekly Priority Vote'}
+          </h2>
           <span className="ml-auto inline-flex items-center gap-1 bg-white/20 px-3 py-1 rounded-full text-xs font-semibold">
             <span className="relative flex w-2 h-2">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75" />
@@ -119,7 +124,9 @@ export function VotingSystem({ issues, userVotedIssueId, onVote }: VotingSystemP
           </span>
         </div>
         <p className="text-blue-100 text-sm relative">
-          Vote for the issue you believe needs the most urgent attention. Poll closes in 24 hours.
+          {hasActivePoll && !isSaturday()
+            ? 'An admin has started a special poll. Vote for the issue you believe needs the most urgent attention.'
+            : 'Vote for the issue you believe needs the most urgent attention. Poll closes in 24 hours.'}
         </p>
       </motion.div>
 

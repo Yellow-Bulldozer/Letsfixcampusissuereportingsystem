@@ -27,6 +27,8 @@ type BackendIssue = {
   reportedBy: string | { _id?: string; name?: string };
   createdAt: string;
   updatedAt: string;
+  mergedInto?: string | { _id?: string };
+  mergedChildren?: Array<string | { _id?: string; title?: string }>;
 };
 
 const categoryToBackend: Record<IssueCategory, string> = {
@@ -131,7 +133,13 @@ function mapIssue(issue: BackendIssue, voteCount = 0): Issue {
     reportedBy: reporterName,
     reportedAt: new Date(issue.createdAt),
     votes: voteCount,
-    updatedAt: new Date(issue.updatedAt)
+    updatedAt: new Date(issue.updatedAt),
+    mergedInto: issue.mergedInto
+      ? (typeof issue.mergedInto === 'string' ? issue.mergedInto : issue.mergedInto._id)
+      : undefined,
+    mergedChildren: issue.mergedChildren
+      ? issue.mergedChildren.map(c => typeof c === 'string' ? c : (c._id || ''))
+      : undefined
   };
 }
 
@@ -184,7 +192,45 @@ export async function createIssue(payload: {
   description: string;
   category: IssueCategory;
   location: { block: string; floor: string; room: string };
+  images?: File[];
 }) {
+  const backendCategory = categoryToBackend[payload.category];
+
+  // When images are present, use FormData (multipart/form-data)
+  if (payload.images && payload.images.length > 0) {
+    const formData = new FormData();
+    formData.append('title', payload.title);
+    formData.append('description', payload.description);
+    formData.append('category', backendCategory);
+    formData.append('location[block]', payload.location.block);
+    formData.append('location[floor]', payload.location.floor);
+    formData.append('location[room]', payload.location.room);
+
+    for (const file of payload.images) {
+      formData.append('images', file);
+    }
+
+    const token = getToken();
+    const headers: Record<string, string> = {};
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
+    }
+    // Do NOT set Content-Type — the browser sets it with the correct multipart boundary
+    const response = await fetch(`${API_BASE_URL}/issues`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+      const message = data?.message || data?.errors?.[0] || 'Failed to create issue';
+      throw new Error(message);
+    }
+    return mapIssue((data as { data: BackendIssue }).data);
+  }
+
+  // No images — use JSON
   const response = await request<{ data: BackendIssue }>(
     '/issues',
     {
@@ -192,7 +238,7 @@ export async function createIssue(payload: {
       body: JSON.stringify({
         title: payload.title,
         description: payload.description,
-        category: categoryToBackend[payload.category],
+        category: backendCategory,
         location: payload.location
       })
     }
@@ -222,7 +268,7 @@ export async function updateIssueStatus(issueId: string, status: Exclude<IssueSt
   return mapIssue(response.data);
 }
 
-export async function getActivePoll() {
+export async function getActivePoll(): Promise<{ pollExists: boolean; voteMap: Map<string, number> }> {
   try {
     const response = await request<{
       data: {
@@ -230,13 +276,13 @@ export async function getActivePoll() {
       };
     }>('/polls/active');
 
-    const voteByIssueId = new Map<string, number>();
+    const voteMap = new Map<string, number>();
     for (const issue of response.data.issues) {
-      voteByIssueId.set(issue._id, issue.voteCount || 0);
+      voteMap.set(issue._id, issue.voteCount || 0);
     }
-    return voteByIssueId;
+    return { pollExists: true, voteMap };
   } catch {
-    return new Map<string, number>();
+    return { pollExists: false, voteMap: new Map<string, number>() };
   }
 }
 
@@ -265,5 +311,73 @@ export async function castVote(issueId: string) {
       body: JSON.stringify({ issueId })
     }
   );
+}
+
+export async function startCustomPoll(issueIds: string[], durationHours: number) {
+  const response = await request<{ data: unknown; message: string }>(
+    '/polls/start-custom',
+    {
+      method: 'POST',
+      body: JSON.stringify({ issueIds, durationHours })
+    }
+  );
+  return response;
+}
+
+export async function mergeIssues(parentId: string, childIds: string[]) {
+  const response = await request<{ data: BackendIssue; message: string }>(
+    '/issues/merge',
+    {
+      method: 'POST',
+      body: JSON.stringify({ parentId, childIds })
+    }
+  );
+  return { issue: mapIssue(response.data), message: response.message };
+}
+
+export async function closePoll(pollId: string) {
+  const response = await request<{ data: unknown; message: string }>(
+    `/polls/${pollId}/close`,
+    {
+      method: 'PUT'
+    }
+  );
+  return response;
+}
+
+export async function getAllPolls() {
+  const response = await request<{
+    data: Array<{
+      _id: string;
+      pollStartDate: string;
+      pollEndDate: string;
+      isActive: boolean;
+      isClosed: boolean;
+      totalVotes: number;
+      issues: Array<{ _id: string; title: string; category: string; status: string }>;
+      winningIssue?: { _id: string; title: string; category: string } | null;
+      createdAt: string;
+    }>;
+  }>('/polls');
+  return response.data;
+}
+
+export async function getActivePollFull() {
+  try {
+    const response = await request<{
+      data: {
+        _id: string;
+        pollStartDate: string;
+        pollEndDate: string;
+        isActive: boolean;
+        isClosed: boolean;
+        totalVotes: number;
+        issues: Array<BackendIssue & { voteCount?: number }>;
+      };
+    }>('/polls/active');
+    return response.data;
+  } catch {
+    return null;
+  }
 }
 

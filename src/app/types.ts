@@ -26,6 +26,8 @@ export interface Issue {
   reportedAt: Date;
   votes: number;
   updatedAt: Date;
+  mergedInto?: string;
+  mergedChildren?: string[];
 }
 
 export interface User {

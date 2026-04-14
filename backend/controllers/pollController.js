@@ -44,6 +44,85 @@ exports.startPoll = async (req, res, next) => {
 };
 
 /**
+ * @desc    Start a custom poll with selected issues and custom duration
+ * @route   POST /api/polls/start-custom
+ * @access  Private (Admin only)
+ */
+exports.startCustomPoll = async (req, res, next) => {
+  try {
+    const { issueIds, durationHours } = req.body;
+
+    if (!issueIds || !Array.isArray(issueIds) || issueIds.length === 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'issueIds[] is required and must contain at least one issue'
+      });
+    }
+
+    if (!durationHours || durationHours < 1 || durationHours > 168) {
+      return res.status(400).json({
+        success: false,
+        message: 'durationHours is required and must be between 1 and 168 (7 days)'
+      });
+    }
+
+    // Check if there's already an active poll
+    const activePoll = await Poll.findOne({ isActive: true, isClosed: false });
+    if (activePoll) {
+      return res.status(400).json({
+        success: false,
+        message: 'An active poll already exists. Close it before starting a new one.',
+        data: activePoll
+      });
+    }
+
+    // Verify all issues exist
+    const issues = await Issue.find({ _id: { $in: issueIds } });
+    if (issues.length !== issueIds.length) {
+      return res.status(400).json({
+        success: false,
+        message: 'One or more issues not found'
+      });
+    }
+
+    const now = new Date();
+    const pollEndDate = new Date(now);
+    pollEndDate.setHours(pollEndDate.getHours() + durationHours);
+
+    // Use the past week as the nominal week range
+    const weekStartDate = new Date(now);
+    weekStartDate.setDate(now.getDate() - ((now.getDay() + 6) % 7));
+    weekStartDate.setHours(0, 0, 0, 0);
+
+    const weekEndDate = new Date(weekStartDate);
+    weekEndDate.setDate(weekStartDate.getDate() + 4);
+    weekEndDate.setHours(23, 59, 59, 999);
+
+    const newPoll = await Poll.create({
+      weekStartDate,
+      weekEndDate,
+      pollStartDate: now,
+      pollEndDate,
+      isActive: true,
+      isClosed: false,
+      issues: issueIds,
+      totalVotes: 0,
+      createdBy: req.user._id
+    });
+
+    await newPoll.populate('issues');
+
+    res.status(201).json({
+      success: true,
+      message: `Poll started with ${issueIds.length} issue(s) for ${durationHours} hour(s)`,
+      data: newPoll
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Get active poll
  * @route   GET /api/polls/active
  * @access  Private

@@ -11,8 +11,10 @@ import { AdminDashboard } from './components/admin-dashboard';
 import { AuthorityDashboard } from './components/authority-dashboard';
 import { Profile } from './components/profile';
 import { PostLoginContent } from './components/post-login-content';
+import { PollManager } from './components/poll-manager';
+import { IssueInbox } from './components/issue-inbox';
 import { isSaturday, isWeekday } from './utils/date-utils';
-import { Calendar, LayoutDashboard, Vote as VoteIcon, UserCircle } from 'lucide-react';
+import { Calendar, LayoutDashboard, Vote as VoteIcon, UserCircle, BarChart3, Inbox } from 'lucide-react';
 
 import {
   castVote,
@@ -38,19 +40,23 @@ export default function App() {
   const [isBootstrapping, setIsBootstrapping] = useState(true);
   const [showReportForm, setShowReportForm] = useState(false);
   const [showPostLoginContent, setShowPostLoginContent] = useState(false);
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'voting' | 'profile'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'voting' | 'profile' | 'polls' | 'inbox'>('dashboard');
   const [userVotedIssueId, setUserVotedIssueId] = useState<string | null>(null);
   const [showHomepage, setShowHomepage] = useState(true);
+  const [hasActivePoll, setHasActivePoll] = useState(false);
 
   const hydrateDashboard = async (user: User) => {
-    const [issuesFromApi, pollVoteMap] = await Promise.all([
+    const [issuesFromApi, { pollExists, voteMap }] = await Promise.all([
       getIssues(),
       getActivePoll()
     ]);
 
+    // Set live poll flag based on whether a poll is actually active
+    setHasActivePoll(pollExists);
+
     const mergedIssues = issuesFromApi.map((issue) => ({
       ...issue,
-      votes: pollVoteMap.get(issue.id) ?? issue.votes
+      votes: voteMap.get(issue.id) ?? issue.votes
     }));
 
     setIssues(mergedIssues);
@@ -102,7 +108,6 @@ export default function App() {
       }
       setToken(token);
       setCurrentUser(user);
-      setShowPostLoginContent(true);
       await hydrateDashboard(user);
       return null;
     } catch (error) {
@@ -135,7 +140,6 @@ export default function App() {
       });
       setToken(token);
       setCurrentUser(user);
-      setShowPostLoginContent(true);
       await hydrateDashboard(user);
       return null;
     } catch (error) {
@@ -149,11 +153,12 @@ export default function App() {
     setIssues([]);
     setVotes([]);
     setUserVotedIssueId(null);
+    setHasActivePoll(false);
     setActiveTab('dashboard');
     setShowPostLoginContent(false);
   };
 
-  const handleTabChange = (tab: 'dashboard' | 'voting' | 'profile') => {
+  const handleTabChange = (tab: 'dashboard' | 'voting' | 'profile' | 'polls' | 'inbox') => {
     setActiveTab(tab);
     setShowReportForm(false);
   };
@@ -163,6 +168,7 @@ export default function App() {
     description: string;
     category: Issue['category'];
     location: Issue['location'];
+    images?: File[];
   }): Promise<string | null> => {
     if (!currentUser) return 'You must be signed in';
     try {
@@ -246,7 +252,7 @@ export default function App() {
         userName={currentUser.name}
         userRole={currentUser.role}
         onLogout={handleLogout}
-        onProfile={() => { setShowPostLoginContent(false); setActiveTab('profile'); }}
+        onProfile={() => setActiveTab('profile')}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -284,11 +290,12 @@ export default function App() {
             <div className="app-tab-nav mb-6">
               {[
                 { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-                { id: 'voting', label: 'Weekly Vote', Icon: VoteIcon, live: isSaturday() },
+                { id: 'voting', label: hasActivePoll ? 'Live Poll' : 'Weekly Vote', Icon: VoteIcon, live: hasActivePoll || isSaturday() },
+                { id: 'profile', label: 'Profile', Icon: UserCircle },
               ].map(({ id, label, Icon, live }) => (
                 <button
                   key={id}
-                  onClick={() => handleTabChange(id as 'dashboard' | 'voting')}
+                  onClick={() => handleTabChange(id as 'dashboard' | 'voting' | 'profile')}
                   className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
                 >
                   {activeTab === id && (
@@ -301,7 +308,7 @@ export default function App() {
                   <Icon className="w-4 h-4" />
                   {label}
                   {live && (
-                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">Live</span>
+                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full animate-pulse">Live</span>
                   )}
                 </button>
               ))}
@@ -332,6 +339,7 @@ export default function App() {
                 issues={issues}
                 userVotedIssueId={userVotedIssueId}
                 onVote={handleVote}
+                hasActivePoll={hasActivePoll}
               />
             ) : (
               <Profile user={currentUser} issues={issues} votes={votes} />
@@ -349,30 +357,47 @@ export default function App() {
         {/* Admin View */}
         {currentUser.role === 'admin' && !showPostLoginContent && (
           <>
-            {activeTab !== 'profile' && (
-              <div className="app-tab-nav mb-6">
-                {[{ id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard }].map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => handleTabChange(id as 'dashboard')}
-                    className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
-                  >
-                    {activeTab === id && (
-                      <motion.div
-                        layoutId="admin-tab-indicator"
-                        className="absolute inset-0 bg-[#1A1A2E]/8 rounded-[0.625rem]"
-                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                      />
-                    )}
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="app-tab-nav mb-6">
+              {[
+                { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+                { id: 'polls', label: 'Poll Manager', Icon: BarChart3 },
+                { id: 'inbox', label: 'Issue Inbox', Icon: Inbox },
+                { id: 'profile', label: 'Profile', Icon: UserCircle },
+              ].map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => handleTabChange(id as 'dashboard' | 'polls' | 'inbox' | 'profile')}
+                  className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
+                >
+                  {activeTab === id && (
+                    <motion.div
+                      layoutId="admin-tab-indicator"
+                      className="absolute inset-0 bg-[#1A1A2E]/8 rounded-[0.625rem]"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
 
             {activeTab === 'profile' ? (
               <Profile user={currentUser} issues={issues} votes={votes} />
+            ) : activeTab === 'polls' ? (
+              <PollManager
+                issues={issues}
+                onPollStarted={() => hydrateDashboard(currentUser)}
+              />
+            ) : activeTab === 'inbox' ? (
+              <IssueInbox
+                issues={issues}
+                onIssuesMerged={() => hydrateDashboard(currentUser)}
+                onNavigateToPoll={(issueIds) => {
+                  setActiveTab('polls');
+                  // The PollManager will pick up these issues from the issues prop
+                }}
+              />
             ) : (
               <AdminDashboard
                 issues={issues}
@@ -385,27 +410,28 @@ export default function App() {
         {/* Authority View */}
         {currentUser.role === 'authority' && !showPostLoginContent && (
           <>
-            {activeTab !== 'profile' && (
-              <div className="app-tab-nav mb-6">
-                {[{ id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard }].map(({ id, label, Icon }) => (
-                  <button
-                    key={id}
-                    onClick={() => handleTabChange(id as 'dashboard')}
-                    className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
-                  >
-                    {activeTab === id && (
-                      <motion.div
-                        layoutId="authority-tab-indicator"
-                        className="absolute inset-0 bg-[#1A1A2E]/8 rounded-[0.625rem]"
-                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
-                      />
-                    )}
-                    <Icon className="w-4 h-4" />
-                    {label}
-                  </button>
-                ))}
-              </div>
-            )}
+            <div className="app-tab-nav mb-6">
+              {[
+                { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+                { id: 'profile', label: 'Profile', Icon: UserCircle },
+              ].map(({ id, label, Icon }) => (
+                <button
+                  key={id}
+                  onClick={() => handleTabChange(id as 'dashboard' | 'profile')}
+                  className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
+                >
+                  {activeTab === id && (
+                    <motion.div
+                      layoutId="authority-tab-indicator"
+                      className="absolute inset-0 bg-[#1A1A2E]/8 rounded-[0.625rem]"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <Icon className="w-4 h-4" />
+                  {label}
+                </button>
+              ))}
+            </div>
             {activeTab === 'profile' ? (
               <Profile user={currentUser} issues={issues} votes={votes} />
             ) : (

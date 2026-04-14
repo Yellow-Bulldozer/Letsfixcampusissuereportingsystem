@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const {
   startPoll,
+  startCustomPoll,
   getActivePoll,
   castVote,
   getPollResult,
@@ -24,6 +25,7 @@ router.get('/my-vote', protect, isStudent, getMyVote);
 
 // Admin-only routes
 router.post('/start', protect, isAdmin, startPoll);
+router.post('/start-custom', protect, isAdmin, startCustomPoll);
 router.get('/', protect, isAdmin, getAllPolls);
 router.put('/:id/close', protect, isAdmin, pollIdValidation, closePoll);
 router.get('/stats', protect, isAdmin, getPollStats);

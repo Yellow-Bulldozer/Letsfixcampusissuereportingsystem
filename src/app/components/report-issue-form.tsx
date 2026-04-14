@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { IssueCategory } from '../types';
-import { X, Upload, MapPin } from 'lucide-react';
+import { X, Upload, MapPin, ImageIcon } from 'lucide-react';
 import { backdropVariants, modalVariants, fadeUp, staggerContainer, easeOutExpo } from '../lib/animations';
 
 interface ReportIssueFormProps {
@@ -14,6 +14,7 @@ interface ReportIssueFormProps {
       floor: string;
       room: string;
     };
+    images?: File[];
   }) => Promise<string | null>;
   onCancel: () => void;
 }
@@ -27,21 +28,72 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
     floor: '',
     room: ''
   });
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
+  const [previewUrls, setPreviewUrls] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
   const [shakeError, setShakeError] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const categories: IssueCategory[] = [
     'Broken Furniture', 'Water Problem', 'Electrical Fault',
     'Washroom Hygiene', 'Classroom Maintenance', 'Other'
   ];
-  const blocks = ['Block A', 'Block B', 'Block C', 'Block D', 'Main Building', 'Library Building'];
+  const blocks = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Main Building', 'Library Building'];
   const floors = ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor'];
 
   const triggerError = (msg: string) => {
     setErrorMessage(msg);
     setShakeError(false);
     requestAnimationFrame(() => setShakeError(true));
+  };
+
+  const handleFilesSelected = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const newFiles = Array.from(files);
+    const totalFiles = selectedFiles.length + newFiles.length;
+
+    if (totalFiles > 5) {
+      triggerError('You can upload a maximum of 5 images');
+      return;
+    }
+
+    // Validate each file
+    const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+    const maxSize = 5 * 1024 * 1024; // 5MB
+
+    for (const file of newFiles) {
+      if (!allowedTypes.includes(file.type)) {
+        triggerError(`"${file.name}" is not a supported image format. Use JPEG, PNG, or WEBP.`);
+        return;
+      }
+      if (file.size > maxSize) {
+        triggerError(`"${file.name}" exceeds the 5MB size limit.`);
+        return;
+      }
+    }
+
+    // Generate preview URLs
+    const newPreviews = newFiles.map(file => URL.createObjectURL(file));
+
+    setSelectedFiles(prev => [...prev, ...newFiles]);
+    setPreviewUrls(prev => [...prev, ...newPreviews]);
+    setErrorMessage('');
+
+    // Reset the input so the same file can be selected again
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const removeFile = (index: number) => {
+    // Revoke the object URL to free memory
+    URL.revokeObjectURL(previewUrls[index]);
+
+    setSelectedFiles(prev => prev.filter((_, i) => i !== index));
+    setPreviewUrls(prev => prev.filter((_, i) => i !== index));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -58,7 +110,8 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
       title: formData.title,
       description: formData.description,
       category: formData.category,
-      location: { block: formData.block, floor: formData.floor, room: formData.room }
+      location: { block: formData.block, floor: formData.floor, room: formData.room },
+      images: selectedFiles.length > 0 ? selectedFiles : undefined
     });
     setIsSubmitting(false);
 
@@ -214,16 +267,82 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
 
               {/* Image Upload */}
               <motion.div variants={fadeUp}>
-                <label className="block text-sm font-semibold text-gray-700 mb-1.5">Upload Images (Optional)</label>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Upload Images (Optional)
+                  {selectedFiles.length > 0 && (
+                    <span className="ml-2 text-xs font-normal text-gray-400">
+                      {selectedFiles.length}/5 selected
+                    </span>
+                  )}
+                </label>
+
+                {/* Hidden file input */}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/jpeg,image/jpg,image/png,image/webp"
+                  multiple
+                  onChange={handleFilesSelected}
+                  className="hidden"
+                  id="image-upload-input"
+                />
+
+                {/* Drop zone / click area */}
                 <motion.div
                   className="border-2 border-dashed border-gray-200 rounded-2xl p-8 text-center cursor-pointer"
                   whileHover={{ borderColor: '#6366f1', backgroundColor: 'rgba(99,102,241,0.03)' }}
                   transition={{ duration: 0.2 }}
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <Upload className="w-7 h-7 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-400">Click to upload images</p>
-                  <p className="text-xs text-gray-300 mt-1">PNG, JPG up to 5MB</p>
+                  <p className="text-xs text-gray-300 mt-1">PNG, JPG, WEBP up to 5MB · Max 5 files</p>
                 </motion.div>
+
+                {/* Image Previews */}
+                <AnimatePresence>
+                  {previewUrls.length > 0 && (
+                    <motion.div
+                      className="grid grid-cols-3 sm:grid-cols-5 gap-3 mt-3"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                    >
+                      {previewUrls.map((url, index) => (
+                        <motion.div
+                          key={url}
+                          className="relative group rounded-xl overflow-hidden border border-gray-200 aspect-square"
+                          initial={{ opacity: 0, scale: 0.8 }}
+                          animate={{ opacity: 1, scale: 1 }}
+                          exit={{ opacity: 0, scale: 0.8 }}
+                          transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+                        >
+                          <img
+                            src={url}
+                            alt={`Preview ${index + 1}`}
+                            className="w-full h-full object-cover"
+                          />
+                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-colors" />
+                          <motion.button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeFile(index);
+                            }}
+                            className="absolute top-1 right-1 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity shadow-lg"
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                          >
+                            <X className="w-3 h-3" />
+                          </motion.button>
+                          <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/50 to-transparent p-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <p className="text-[10px] text-white truncate">{selectedFiles[index]?.name}</p>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </motion.div>
 
               {/* Action Buttons */}

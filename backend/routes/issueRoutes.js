@@ -10,7 +10,8 @@ const {
   getDashboardStats,
   getIssuesGroupedByStatus,
   getWeeklyPriorityIssue,
-  deleteIssue
+  deleteIssue,
+  mergeIssues
 } = require('../controllers/issueController');
 const { protect, authorize, isStudent, isAdmin, isAuthority } = require('../middlewares/auth');
 const {
@@ -47,6 +48,7 @@ router.put(
 );
 router.get('/grouped/status', protect, isAdmin, getIssuesGroupedByStatus);
 router.delete('/:id', protect, isAdmin, issueIdValidation, deleteIssue);
+router.post('/merge', protect, isAdmin, mergeIssues);
 
 // Admin and Authority routes
 router.put(

@@ -107,6 +107,19 @@ const issueSchema = new mongoose.Schema({
       default: Date.now
     }
   }],
+  mergedInto: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Issue',
+    default: null
+  },
+  mergedChildren: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'Issue'
+  }],
+  mergedAt: {
+    type: Date,
+    default: null
+  },
   createdAt: {
     type: Date,
     default: Date.now
