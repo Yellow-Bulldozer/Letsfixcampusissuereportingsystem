@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { motion } from 'motion/react';
 import { User, Issue, UserRole, IssueStatus, Vote } from './types';
 import { Homepage } from './components/homepage';
 import { Login } from './components/login';
@@ -12,6 +13,7 @@ import { Profile } from './components/profile';
 import { PostLoginContent } from './components/post-login-content';
 import { isSaturday, isWeekday } from './utils/date-utils';
 import { Calendar, LayoutDashboard, Vote as VoteIcon, UserCircle } from 'lucide-react';
+
 import {
   castVote,
   clearToken,
@@ -244,6 +246,7 @@ export default function App() {
         userName={currentUser.name}
         userRole={currentUser.role}
         onLogout={handleLogout}
+        onProfile={() => { setShowPostLoginContent(false); setActiveTab('profile'); }}
       />
 
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -278,42 +281,30 @@ export default function App() {
         {currentUser.role === 'student' && !showPostLoginContent && (
           <>
             {/* Tab Navigation */}
-            <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
-              <button
-                onClick={() => handleTabChange('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'dashboard'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
-              </button>
-              <button
-                onClick={() => handleTabChange('voting')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'voting'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <VoteIcon className="w-4 h-4" />
-                Weekly Vote
-                {isSaturday() && (
-                  <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">
-                    Live
-                  </span>
-                )}
-              </button>
-              <button
-                onClick={() => handleTabChange('profile')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'profile'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <UserCircle className="w-4 h-4" />
-                Profile
-              </button>
+            <div className="app-tab-nav mb-6">
+              {[
+                { id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+                { id: 'voting', label: 'Weekly Vote', Icon: VoteIcon, live: isSaturday() },
+              ].map(({ id, label, Icon, live }) => (
+                <button
+                  key={id}
+                  onClick={() => handleTabChange(id as 'dashboard' | 'voting')}
+                  className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
+                >
+                  {activeTab === id && (
+                    <motion.div
+                      layoutId="student-tab-indicator"
+                      className="absolute inset-0 bg-[#1A1A2E]/8 rounded-[0.625rem]"
+                      transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                    />
+                  )}
+                  <Icon className="w-4 h-4" />
+                  {label}
+                  {live && (
+                    <span className="bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">Live</span>
+                  )}
+                </button>
+              ))}
             </div>
 
             {/* Weekday Info Banner for Reporting */}
@@ -358,35 +349,35 @@ export default function App() {
         {/* Admin View */}
         {currentUser.role === 'admin' && !showPostLoginContent && (
           <>
-            <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
-              <button
-                onClick={() => handleTabChange('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'dashboard'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
-              </button>
-              <button
-                onClick={() => handleTabChange('profile')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'profile'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <UserCircle className="w-4 h-4" />
-                Profile
-              </button>
-            </div>
-            {activeTab === 'dashboard' ? (
+            {activeTab !== 'profile' && (
+              <div className="app-tab-nav mb-6">
+                {[{ id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard }].map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => handleTabChange(id as 'dashboard')}
+                    className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
+                  >
+                    {activeTab === id && (
+                      <motion.div
+                        layoutId="admin-tab-indicator"
+                        className="absolute inset-0 bg-[#1A1A2E]/8 rounded-[0.625rem]"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {activeTab === 'profile' ? (
+              <Profile user={currentUser} issues={issues} votes={votes} />
+            ) : (
               <AdminDashboard
                 issues={issues}
                 onUpdateStatus={handleUpdateStatus}
               />
-            ) : (
-              <Profile user={currentUser} issues={issues} votes={votes} />
             )}
           </>
         )}
@@ -394,35 +385,34 @@ export default function App() {
         {/* Authority View */}
         {currentUser.role === 'authority' && !showPostLoginContent && (
           <>
-            <div className="mb-6 bg-white rounded-xl border border-gray-200 p-2 inline-flex gap-2">
-              <button
-                onClick={() => handleTabChange('dashboard')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'dashboard'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <LayoutDashboard className="w-4 h-4" />
-                Dashboard
-              </button>
-              <button
-                onClick={() => handleTabChange('profile')}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-lg font-medium transition-colors ${activeTab === 'profile'
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 hover:bg-gray-100'
-                  }`}
-              >
-                <UserCircle className="w-4 h-4" />
-                Profile
-              </button>
-            </div>
-            {activeTab === 'dashboard' ? (
+            {activeTab !== 'profile' && (
+              <div className="app-tab-nav mb-6">
+                {[{ id: 'dashboard', label: 'Dashboard', Icon: LayoutDashboard }].map(({ id, label, Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => handleTabChange(id as 'dashboard')}
+                    className={`app-tab-btn ${activeTab === id ? 'active' : ''}`}
+                  >
+                    {activeTab === id && (
+                      <motion.div
+                        layoutId="authority-tab-indicator"
+                        className="absolute inset-0 bg-[#1A1A2E]/8 rounded-[0.625rem]"
+                        transition={{ type: 'spring', stiffness: 500, damping: 35 }}
+                      />
+                    )}
+                    <Icon className="w-4 h-4" />
+                    {label}
+                  </button>
+                ))}
+              </div>
+            )}
+            {activeTab === 'profile' ? (
+              <Profile user={currentUser} issues={issues} votes={votes} />
+            ) : (
               <AuthorityDashboard
                 issues={issues}
                 onUpdateStatus={handleUpdateStatus}
               />
-            ) : (
-              <Profile user={currentUser} issues={issues} votes={votes} />
             )}
           </>
         )}
