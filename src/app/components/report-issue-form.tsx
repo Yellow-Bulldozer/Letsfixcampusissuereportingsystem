@@ -39,8 +39,8 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
     'Broken Furniture', 'Water Problem', 'Electrical Fault',
     'Washroom Hygiene', 'Classroom Maintenance', 'Other'
   ];
-  const blocks = ['Block 1', 'Block 2', 'Block 3', 'Block 4', 'Main Building', 'Library Building'];
-  const floors = ['Ground Floor', '1st Floor', '2nd Floor', '3rd Floor', '4th Floor', '5th Floor'];
+  const blocks = (import.meta.env.VITE_CAMPUS_BLOCKS || 'Block 1,Block 2,Block 3,Block 4,Main Building,Library Building').split(',');
+  const floors = (import.meta.env.VITE_CAMPUS_FLOORS || 'Ground Floor,1st Floor,2nd Floor,3rd Floor,4th Floor,5th Floor').split(',');
 
   const triggerError = (msg: string) => {
     setErrorMessage(msg);

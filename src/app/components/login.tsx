@@ -47,7 +47,8 @@ interface LoginProps {
 
 type AuthPage = 'role-select' | 'sign-in' | 'sign-up';
 
-const STUDENT_EMAIL_REGEX = /^[a-z0-9]+@grietcollege\.com$/i;
+const COLLEGE_EMAIL_DOMAIN = import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'college.edu';
+const STUDENT_EMAIL_REGEX = new RegExp(`^[a-z0-9]+@${COLLEGE_EMAIL_DOMAIN.replace(/\./g, '\\.')}$`, 'i');
 const ROLE_CONFIG = [
   {
     type: 'student' as UserRole,
@@ -150,7 +151,7 @@ export function Login({ onSignIn, onSignUp, onGoHome }: LoginProps) {
     resetMessages();
     const normalizedEmail = signUpForm.email.trim().toLowerCase();
     if (!STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
-      triggerError('Student sign up requires email format: rollno@grietcollege.com');
+      triggerError(`Student sign up requires email format: rollno@${COLLEGE_EMAIL_DOMAIN}`);
       setIsStudentEmailVerified(false);
       return;
     }
@@ -418,7 +419,7 @@ export function Login({ onSignIn, onSignUp, onGoHome }: LoginProps) {
                       value={signInForm.email}
                       onChange={(e) => setSignInForm(prev => ({ ...prev, email: e.target.value }))}
                       className="auth-input"
-                      placeholder="name@grietcollege.com"
+                      placeholder={`name@${COLLEGE_EMAIL_DOMAIN}`}
                       required
                     />
                   </motion.div>
@@ -486,7 +487,7 @@ export function Login({ onSignIn, onSignUp, onGoHome }: LoginProps) {
                           if (selectedRole === 'student') setIsStudentEmailVerified(false);
                         }}
                         className="auth-input"
-                        placeholder={selectedRole === 'student' ? 'rollno@grietcollege.com' : 'name@college.edu'}
+                        placeholder={selectedRole === 'student' ? `rollno@${COLLEGE_EMAIL_DOMAIN}` : `name@${COLLEGE_EMAIL_DOMAIN}`}
                         required
                       />
                       {selectedRole === 'student' && (
@@ -500,7 +501,7 @@ export function Login({ onSignIn, onSignUp, onGoHome }: LoginProps) {
                       )}
                     </div>
                     {selectedRole === 'student' && (
-                      <p className="mt-1.5 text-xs text-[#1A1A2E]/40">Format: rollno@grietcollege.com</p>
+                      <p className="mt-1.5 text-xs text-[#1A1A2E]/40">Format: rollno@{COLLEGE_EMAIL_DOMAIN}</p>
                     )}
                   </motion.div>
                   <motion.div variants={fadeUp} initial="hidden" animate="visible" transition={{ delay: 0.13 }}>

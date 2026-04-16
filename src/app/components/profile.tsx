@@ -57,15 +57,18 @@ export function Profile({ user, issues, votes }: ProfileProps) {
     return issues.filter(issue => issue.reportedBy === user.name);
   }, [issues, user.name]);
 
+  // For student: stats are based on their OWN submissions (so they can track all stages)
+  // For admin/authority: stats are based on all issues passed in
   const issueStats = useMemo(() => {
+    const src = user.role === 'student' ? userIssues : issues;
     return {
-      total: issues.length,
-      pending: issues.filter(i => i.status === 'pending').length,
-      verified: issues.filter(i => i.status === 'verified').length,
-      ongoing: issues.filter(i => i.status === 'ongoing').length,
-      completed: issues.filter(i => i.status === 'completed').length
+      total: src.length,
+      pending: src.filter(i => i.status === 'pending').length,
+      verified: src.filter(i => i.status === 'verified').length,
+      ongoing: src.filter(i => i.status === 'ongoing').length,
+      completed: src.filter(i => i.status === 'completed').length
     };
-  }, [issues]);
+  }, [issues, userIssues, user.role]);
 
   const studentStats = useMemo(() => {
     return {

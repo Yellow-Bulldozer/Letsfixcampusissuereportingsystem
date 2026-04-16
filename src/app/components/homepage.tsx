@@ -17,9 +17,10 @@ import {
     CheckCircle,
     GraduationCap,
     ArrowRight,
-    Quote,
     ChevronRight
 } from 'lucide-react';
+
+const COLLEGE_NAME = (import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'college.edu').split('.')[0].toUpperCase();
 
 /* ─── types ─── */
 interface HomepageProps {
@@ -65,30 +66,7 @@ function Reveal({
     );
 }
 
-/* ─── animated counter ─── */
-function Counter({ target, suffix = '' }: { target: number; suffix?: string }) {
-    const ref = useRef<HTMLSpanElement>(null);
-    const isInView = useInView(ref, { once: true });
-    const [count, setCount] = useState(0);
 
-    useEffect(() => {
-        if (!isInView) return;
-        let current = 0;
-        const increment = target / 120;
-        const timer = setInterval(() => {
-            current += increment;
-            if (current >= target) {
-                setCount(target);
-                clearInterval(timer);
-            } else {
-                setCount(Math.floor(current));
-            }
-        }, 1000 / 60);
-        return () => clearInterval(timer);
-    }, [isInView, target]);
-
-    return <span ref={ref}>{count.toLocaleString()}{suffix}</span>;
-}
 
 /* ═══════════════════════════════════════════
    HOMEPAGE — Reasonal.co-inspired
@@ -124,18 +102,7 @@ export function Homepage({ onGetStarted, onSignIn }: HomepageProps) {
         { icon: CheckCircle, title: 'Transparent Resolution', text: 'Every step is visible — no more complaints vanishing', bg: 'bg-indigo-100', color: 'text-indigo-700' }
     ];
 
-    const stats = [
-        { val: 1200, suffix: '+', label: 'Issues Reported' },
-        { val: 940, suffix: '+', label: 'Issues Resolved' },
-        { val: 3500, suffix: '+', label: 'Active Voters' },
-        { val: 48, suffix: 'h', label: 'Avg Resolution' }
-    ];
 
-    const quotes = [
-        { text: 'The broken bench in Block-B was there for months. I reported it on Let\'sFix, it got voted as priority, and was replaced within a week!', name: 'Priya Sharma', role: 'CSE, 3rd Year', emoji: '👩‍🎓' },
-        { text: 'As an admin, the verification workflow is brilliant. It filters noise and ensures only real issues reach authorities.', name: 'Raj Kumar', role: 'Campus Administrator', emoji: '🛡️' },
-        { text: 'The voting system gives students actual power to decide what gets fixed first. Democracy in action!', name: 'Ananya Reddy', role: 'ECE, 2nd Year', emoji: '🗳️' }
-    ];
 
     return (
         <div className="min-h-screen" style={{ background: '#F8F6F3' }}>
@@ -177,7 +144,7 @@ export function Homepage({ onGetStarted, onSignIn }: HomepageProps) {
                     >
                         <span className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/50 text-[#1A1A2E]/70 text-sm font-semibold mb-8 border border-white/60">
                             <GraduationCap className="w-4 h-4" />
-                            GRIET College Campus Platform
+                            {COLLEGE_NAME} Campus Platform
                         </span>
                     </motion.div>
 
@@ -321,60 +288,7 @@ export function Homepage({ onGetStarted, onSignIn }: HomepageProps) {
                 </div>
             </section>
 
-            {/* ══════════ 5. STATS — Cream ══════════ */}
-            <section className="section-block bg-pastel-cream mx-3 sm:mx-6 mt-4">
-                <div className="max-w-4xl mx-auto">
-                    <Reveal className="text-center mb-12">
-                        <span className="font-archivo font-bold text-sm tracking-widest uppercase text-[#1A1A2E]/40 mb-3 block">Impact</span>
-                        <h2 className="font-archivo text-[#1A1A2E] font-black text-3xl sm:text-5xl">
-                            Real numbers, real change
-                        </h2>
-                    </Reveal>
 
-                    <div className="grid grid-cols-2 lg:grid-cols-4 gap-5">
-                        {stats.map((s, i) => (
-                            <Reveal key={s.label} delay={i * 0.1} direction="up">
-                                <div className="pill-card bg-white/60 text-center">
-                                    <p className="font-archivo font-black text-[#1A1A2E] text-3xl sm:text-4xl mb-1">
-                                        <Counter target={s.val} suffix={s.suffix} />
-                                    </p>
-                                    <p className="text-[#1A1A2E]/45 text-sm font-medium">{s.label}</p>
-                                </div>
-                            </Reveal>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
-            {/* ══════════ 6. TESTIMONIALS — Rose ══════════ */}
-            <section className="section-block bg-pastel-rose mx-3 sm:mx-6 mt-4">
-                <div className="max-w-5xl mx-auto">
-                    <Reveal className="text-center mb-14">
-                        <span className="font-archivo font-bold text-sm tracking-widest uppercase text-[#1A1A2E]/40 mb-3 block">Love from the community</span>
-                        <h2 className="font-archivo text-[#1A1A2E] font-black text-3xl sm:text-5xl">
-                            What students are saying
-                        </h2>
-                    </Reveal>
-
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
-                        {quotes.map((q, i) => (
-                            <Reveal key={q.name} delay={i * 0.12} direction="right">
-                                <div className="testimonial-pill h-full flex flex-col">
-                                    <Quote className="w-7 h-7 text-[#1A1A2E]/10 mb-3" />
-                                    <p className="text-[#1A1A2E]/65 text-sm leading-relaxed flex-1">"{q.text}"</p>
-                                    <div className="flex items-center gap-3 mt-5 pt-4 border-t border-[#1A1A2E]/8">
-                                        <span className="text-2xl">{q.emoji}</span>
-                                        <div>
-                                            <p className="font-semibold text-[#1A1A2E] text-sm">{q.name}</p>
-                                            <p className="text-[#1A1A2E]/40 text-xs">{q.role}</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Reveal>
-                        ))}
-                    </div>
-                </div>
-            </section>
 
             {/* ══════════ 7. FINAL CTA — Charcoal ══════════ */}
             <section className="section-block bg-charcoal mx-3 sm:mx-6 mt-4 text-center" style={{ minHeight: '50vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
@@ -410,7 +324,7 @@ export function Homepage({ onGetStarted, onSignIn }: HomepageProps) {
                         <span className="text-[#1A1A2E]/30 text-sm ml-1">Campus Issue Resolution Platform</span>
                     </div>
                     <p className="text-[#1A1A2E]/30 text-sm">
-                        Built with ❤️ for GRIET College · © {new Date().getFullYear()}
+                        Built with ❤️ for {COLLEGE_NAME} College · © {new Date().getFullYear()}
                     </p>
                 </div>
             </footer>

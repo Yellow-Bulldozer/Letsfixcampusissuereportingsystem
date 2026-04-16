@@ -31,7 +31,8 @@ import {
   verifyIssue
 } from './lib/api';
 
-const STUDENT_EMAIL_REGEX = /^[a-z0-9]+@grietcollege\.com$/i;
+const COLLEGE_EMAIL_DOMAIN = import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'college.edu';
+const STUDENT_EMAIL_REGEX = new RegExp(`^[a-z0-9]+@${COLLEGE_EMAIL_DOMAIN.replace(/\./g, '\\.')}$`, 'i');
 
 export default function App() {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
@@ -44,6 +45,11 @@ export default function App() {
   const [userVotedIssueId, setUserVotedIssueId] = useState<string | null>(null);
   const [showHomepage, setShowHomepage] = useState(true);
   const [hasActivePoll, setHasActivePoll] = useState(false);
+
+  // Issues visible to students: only admin-verified (or beyond) issues
+  const studentVisibleIssues = issues.filter(
+    (i) => i.status === 'verified' || i.status === 'ongoing' || i.status === 'completed'
+  );
 
   const hydrateDashboard = async (user: User) => {
     const [issuesFromApi, { pollExists, voteMap }] = await Promise.all([
@@ -128,7 +134,7 @@ export default function App() {
       return 'Only student self-signup is enabled. Admin/Authority users must be created in the backend database.';
     }
     if (!STUDENT_EMAIL_REGEX.test(normalizedEmail)) {
-      return 'Students must sign up using: rollno@grietcollege.com';
+      return `Students must sign up using: rollno@${COLLEGE_EMAIL_DOMAIN}`;
     }
 
     try {
@@ -331,12 +337,12 @@ export default function App() {
 
             {activeTab === 'dashboard' ? (
               <StudentDashboard
-                issues={issues}
+                issues={studentVisibleIssues}
                 onReportIssue={() => setShowReportForm(true)}
               />
             ) : activeTab === 'voting' ? (
               <VotingSystem
-                issues={issues}
+                issues={studentVisibleIssues}
                 userVotedIssueId={userVotedIssueId}
                 onVote={handleVote}
                 hasActivePoll={hasActivePoll}
