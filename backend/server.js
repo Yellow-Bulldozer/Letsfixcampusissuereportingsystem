@@ -25,25 +25,29 @@ const app = express();
 app.use(helmet());
 app.use(mongoSanitize());
 
-// CORS Configuration — allow localhost and any LAN device (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+// CORS Configuration
+// Allows: localhost (dev), Vercel deployments, and the configured FRONTEND_URL (prod)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  process.env.FRONTEND_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: function(origin, callback) {
-    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+  origin: function (origin, callback) {
+    // Allow requests with no origin (curl, Postman, mobile apps)
     if (!origin) return callback(null, true);
 
-    const allowed = [
-      process.env.FRONTEND_URL,
-      'http://localhost:5173',
-      'http://localhost:3000',
-    ].filter(Boolean);
+    // Allow any Vercel preview/production deployment
+    const isVercel = /^https:\/\/.*\.vercel\.app$/.test(origin);
 
-    // Allow any device on the local network
-    const isLocalNetwork = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d+\.\d+(:\d+)?$/.test(origin);
+    // Allow any origin explicitly listed
+    const isAllowed = allowedOrigins.includes(origin);
 
-    if (allowed.includes(origin) || isLocalNetwork) {
+    if (isVercel || isAllowed) {
       callback(null, true);
     } else {
-      callback(null, true); // Allow all in development
+      callback(new Error(`CORS: Origin ${origin} not allowed`));
     }
   },
   credentials: true
@@ -53,7 +57,7 @@ app.use(cors({
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 
-// Static Files (for local image uploads)
+// Static Files (for local image uploads — not used in production with Cloudinary)
 app.use('/uploads', express.static('uploads'));
 
 // API Routes
@@ -66,7 +70,8 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({
     success: true,
     message: 'Server is running',
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV
   });
 });
 
@@ -75,7 +80,6 @@ app.use(errorHandler);
 
 // Poll Automation Cron Job
 // Runs every Saturday at midnight (00:00)
-// Cron format: second minute hour day-of-month month day-of-week
 const pollDay = process.env.POLL_DAY || 6; // 6 = Saturday (0 = Sunday)
 const pollStartHour = process.env.POLL_START_HOUR || 0;
 
@@ -88,18 +92,17 @@ cron.schedule(`0 ${pollStartHour} * * ${pollDay}`, async () => {
     console.error('Error starting weekly poll:', error.message);
   }
 }, {
-  timezone: "America/New_York" // Adjust to your timezone
+  timezone: "Asia/Kolkata"
 });
 
-console.log(`Poll automation scheduled: Every Saturday at ${pollStartHour}:00`);
+console.log(`Poll automation scheduled: Every Saturday at ${pollStartHour}:00 IST`);
 
-// Start Server
+// Start Server — listen on 0.0.0.0 so Render/cloud can route to it
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
   app.listen(PORT, '0.0.0.0', () => {
-    console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-    console.log(`Accessible on LAN at http://10.48.153.71:${PORT}`);
+    console.log(`Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`);
   });
 });
 

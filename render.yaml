@@ -1,0 +1,19 @@
+# Render Deployment Configuration
+# This file tells Render how to build and run your backend
+
+services:
+  - type: web
+    name: letsfixcampus-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: node server.js
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # Add these manually in Render dashboard (they contain secrets):
+      # MONGO_URI, JWT_SECRET, CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY,
+      # CLOUDINARY_API_SECRET, FRONTEND_URL
