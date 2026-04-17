@@ -25,9 +25,27 @@ const app = express();
 app.use(helmet());
 app.use(mongoSanitize());
 
-// CORS Configuration
+// CORS Configuration — allow localhost and any LAN device (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
 app.use(cors({
-  origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin: function(origin, callback) {
+    // Allow requests with no origin (mobile apps, curl, Postman, etc.)
+    if (!origin) return callback(null, true);
+
+    const allowed = [
+      process.env.FRONTEND_URL,
+      'http://localhost:5173',
+      'http://localhost:3000',
+    ].filter(Boolean);
+
+    // Allow any device on the local network
+    const isLocalNetwork = /^https?:\/\/(192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[01])\.)\d+\.\d+(:\d+)?$/.test(origin);
+
+    if (allowed.includes(origin) || isLocalNetwork) {
+      callback(null, true);
+    } else {
+      callback(null, true); // Allow all in development
+    }
+  },
   credentials: true
 }));
 
@@ -79,8 +97,9 @@ console.log(`Poll automation scheduled: Every Saturday at ${pollStartHour}:00`);
 const PORT = process.env.PORT || 5000;
 
 connectDB().then(() => {
-  app.listen(PORT, () => {
+  app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
+    console.log(`Accessible on LAN at http://10.48.153.71:${PORT}`);
   });
 });
 

@@ -698,7 +698,7 @@ export function IssueInbox({ issues, onIssuesMerged, onNavigateToPoll }: IssueIn
                       {viewingIssue.images.map((img, i) => (
                         <img
                           key={i}
-                          src={img.startsWith('http') ? img : `http://localhost:5000${img}`}
+                          src={img.startsWith('http') ? img : `${(import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api').replace(/\/api$/, '')}${img}`}
                           alt={`Issue ${i + 1}`}
                           className="w-24 h-24 object-cover rounded-lg border border-gray-200"
                         />
