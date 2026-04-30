@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
 import { Issue, IssueStatus } from '../types';
-import { CheckCircle, XCircle, Edit, Eye, Filter, BarChart3, Users, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, Edit, Eye, Filter, BarChart3, AlertTriangle } from 'lucide-react';
 import { IssueCard } from './issue-card';
 import { formatDate } from '../utils/date-utils';
 

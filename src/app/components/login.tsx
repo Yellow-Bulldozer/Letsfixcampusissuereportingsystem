@@ -61,7 +61,7 @@ const ROLE_CONFIG = [
   },
   {
     type: 'admin' as UserRole,
-    title: 'Administrator',
+    title: 'Admin',
     icon: Shield,
     description: 'Verify and manage reported issues',
     bg: 'bg-purple-50',

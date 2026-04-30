@@ -1,8 +1,8 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { IssueCategory } from '../types';
-import { X, Upload, MapPin, ImageIcon } from 'lucide-react';
-import { backdropVariants, modalVariants, fadeUp, staggerContainer, easeOutExpo } from '../lib/animations';
+import { X, Upload, MapPin } from 'lucide-react';
+import { backdropVariants, modalVariants, fadeUp, staggerContainer } from '../lib/animations';
 
 interface ReportIssueFormProps {
   onSubmit: (issueData: {
@@ -34,13 +34,24 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
   const [errorMessage, setErrorMessage] = useState('');
   const [shakeError, setShakeError] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const resetFileInput = () => {
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
 
   const categories: IssueCategory[] = [
     'Broken Furniture', 'Water Problem', 'Electrical Fault',
     'Washroom Hygiene', 'Classroom Maintenance', 'Other'
   ];
-  const blocks = (import.meta.env.VITE_CAMPUS_BLOCKS || 'Block 1,Block 2,Block 3,Block 4,Main Building,Library Building').split(',');
-  const floors = (import.meta.env.VITE_CAMPUS_FLOORS || 'Ground Floor,1st Floor,2nd Floor,3rd Floor,4th Floor,5th Floor').split(',');
+  const blocks = (import.meta.env.VITE_CAMPUS_BLOCKS || 'Block 1,Block 2,Block 3,Block 4,Main Building,Library Building,Sports Room')
+    .split(',')
+    .map((item: string) => item.trim())
+    .filter(Boolean);
+  const floors = (import.meta.env.VITE_CAMPUS_FLOORS || 'Ground Floor,1st Floor,2nd Floor,3rd Floor,4th Floor,5th Floor')
+    .split(',')
+    .map((item: string) => item.trim())
+    .filter(Boolean);
 
   const triggerError = (msg: string) => {
     setErrorMessage(msg);
@@ -57,6 +68,7 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
 
     if (totalFiles > 5) {
       triggerError('You can upload a maximum of 5 images');
+      resetFileInput();
       return;
     }
 
@@ -67,10 +79,12 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
     for (const file of newFiles) {
       if (!allowedTypes.includes(file.type)) {
         triggerError(`"${file.name}" is not a supported image format. Use JPEG, PNG, or WEBP.`);
+        resetFileInput();
         return;
       }
       if (file.size > maxSize) {
         triggerError(`"${file.name}" exceeds the 5MB size limit.`);
+        resetFileInput();
         return;
       }
     }
@@ -83,9 +97,7 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
     setErrorMessage('');
 
     // Reset the input so the same file can be selected again
-    if (fileInputRef.current) {
-      fileInputRef.current.value = '';
-    }
+    resetFileInput();
   };
 
   const removeFile = (index: number) => {
@@ -133,15 +145,14 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
         onClick={(e) => e.target === e.currentTarget && onCancel()}
       >
         <motion.div
-          className="bg-white w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto"
-          style={{ borderRadius: '1.75rem 1.75rem 0 0', ...(window.innerWidth >= 640 ? { borderRadius: '1.75rem' } : {}) }}
+          className="bg-white w-full sm:max-w-2xl max-h-[95vh] sm:max-h-[90vh] overflow-y-auto rounded-t-[1.75rem] sm:rounded-[1.75rem]"
           variants={modalVariants}
           initial="hidden"
           animate="visible"
           exit="exit"
         >
           {/* Header */}
-          <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10" style={{ borderRadius: 'inherit inherit 0 0' }}>
+          <div className="sticky top-0 bg-white/95 backdrop-blur-sm border-b border-gray-100 px-6 py-4 flex items-center justify-between z-10">
             <div>
               <h2 className="text-xl font-bold text-gray-900 font-archivo">Report an Issue</h2>
               <p className="text-xs text-gray-400 mt-0.5">Help us improve campus life</p>
@@ -240,14 +251,14 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">Block <span className="text-red-500">*</span></label>
                       <select value={formData.block} onChange={(e) => setFormData({ ...formData, block: e.target.value })} className={selectClass} required>
                         <option value="">Select</option>
-                        {blocks.map(b => <option key={b} value={b}>{b}</option>)}
+                        {blocks.map((b: string) => <option key={b} value={b}>{b}</option>)}
                       </select>
                     </div>
                     <div>
                       <label className="block text-xs font-semibold text-gray-600 mb-1.5">Floor <span className="text-red-500">*</span></label>
                       <select value={formData.floor} onChange={(e) => setFormData({ ...formData, floor: e.target.value })} className={selectClass} required>
                         <option value="">Select</option>
-                        {floors.map(f => <option key={f} value={f}>{f}</option>)}
+                        {floors.map((f: string) => <option key={f} value={f}>{f}</option>)}
                       </select>
                     </div>
                     <div>
@@ -296,7 +307,7 @@ export function ReportIssueForm({ onSubmit, onCancel }: ReportIssueFormProps) {
                 >
                   <Upload className="w-7 h-7 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm text-gray-400">Click to upload images</p>
-                  <p className="text-xs text-gray-300 mt-1">PNG, JPG, WEBP up to 5MB · Max 5 files</p>
+                  <p className="text-xs text-gray-300 mt-1">PNG, JPG, WEBP up to 5MB - Max 5 files</p>
                 </motion.div>
 
                 {/* Image Previews */}

@@ -115,6 +115,7 @@ export default function App() {
       setToken(token);
       setCurrentUser(user);
       await hydrateDashboard(user);
+      setShowPostLoginContent(true);
       return null;
     } catch (error) {
       return error instanceof Error ? error.message : 'Sign in failed';
@@ -147,6 +148,7 @@ export default function App() {
       setToken(token);
       setCurrentUser(user);
       await hydrateDashboard(user);
+      setShowPostLoginContent(true);
       return null;
     } catch (error) {
       return error instanceof Error ? error.message : 'Sign up failed';
@@ -393,13 +395,13 @@ export default function App() {
             ) : activeTab === 'polls' ? (
               <PollManager
                 issues={issues}
-                onPollStarted={() => hydrateDashboard(currentUser)}
+                onPollStarted={() => hydrateDashboard(currentUser!)}
               />
             ) : activeTab === 'inbox' ? (
               <IssueInbox
                 issues={issues}
-                onIssuesMerged={() => hydrateDashboard(currentUser)}
-                onNavigateToPoll={(issueIds) => {
+                onIssuesMerged={() => hydrateDashboard(currentUser!)}
+                onNavigateToPoll={() => {
                   setActiveTab('polls');
                   // The PollManager will pick up these issues from the issues prop
                 }}

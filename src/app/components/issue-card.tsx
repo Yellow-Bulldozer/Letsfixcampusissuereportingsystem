@@ -16,7 +16,7 @@ import {
   AlertTriangle
 } from 'lucide-react';
 import { formatDate } from '../utils/date-utils';
-import { softSpring } from '../lib/animations';
+
 
 interface IssueCardProps {
   issue: Issue;
