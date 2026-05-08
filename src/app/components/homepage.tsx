@@ -20,7 +20,7 @@ import {
     ChevronRight
 } from 'lucide-react';
 
-const COLLEGE_NAME = (import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'college.edu').split('.')[0].toUpperCase();
+const COLLEGE_NAME = (import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'grietcollege.com').split('.')[0].toUpperCase();
 
 /* ─── types ─── */
 interface HomepageProps {

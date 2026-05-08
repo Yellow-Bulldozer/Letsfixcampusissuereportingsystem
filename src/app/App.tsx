@@ -31,7 +31,7 @@ import {
   verifyIssue
 } from './lib/api';
 
-const COLLEGE_EMAIL_DOMAIN = import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'college.edu';
+const COLLEGE_EMAIL_DOMAIN = import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'grietcollege.com';
 const STUDENT_EMAIL_REGEX = new RegExp(`^[a-z0-9]+@${COLLEGE_EMAIL_DOMAIN.replace(/\./g, '\\.')}$`, 'i');
 
 export default function App() {

@@ -47,7 +47,7 @@ interface LoginProps {
 
 type AuthPage = 'role-select' | 'sign-in' | 'sign-up';
 
-const COLLEGE_EMAIL_DOMAIN = import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'college.edu';
+const COLLEGE_EMAIL_DOMAIN = import.meta.env.VITE_COLLEGE_EMAIL_DOMAIN || 'grietcollege.com';
 const STUDENT_EMAIL_REGEX = new RegExp(`^[a-z0-9]+@${COLLEGE_EMAIL_DOMAIN.replace(/\./g, '\\.')}$`, 'i');
 const ROLE_CONFIG = [
   {

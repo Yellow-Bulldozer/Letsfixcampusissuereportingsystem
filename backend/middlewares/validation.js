@@ -33,7 +33,7 @@ const registerValidation = [
     .isEmail().withMessage('Please provide a valid email')
     .normalizeEmail()
     .custom((value) => {
-      const domain = process.env.COLLEGE_EMAIL_DOMAIN || '@college.edu';
+      const domain = process.env.COLLEGE_EMAIL_DOMAIN || '@grietcollege.com';
       if (!value.endsWith(domain)) {
         throw new Error(`Email must be from college domain ${domain}`);
       }
