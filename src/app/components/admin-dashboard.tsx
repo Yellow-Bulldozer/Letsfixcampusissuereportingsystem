@@ -1,17 +1,27 @@
 import { useState, useMemo } from 'react';
 import { Issue, IssueStatus } from '../types';
-import { CheckCircle, XCircle, Edit, Eye, Filter, BarChart3, AlertTriangle } from 'lucide-react';
+import { CheckCircle, XCircle, Edit, Eye, Filter, BarChart3, AlertTriangle, RefreshCw } from 'lucide-react';
 import { IssueCard } from './issue-card';
 import { formatDate } from '../utils/date-utils';
 
 interface AdminDashboardProps {
   issues: Issue[];
   onUpdateStatus: (issueId: string, newStatus: IssueStatus) => void;
+  onRefresh?: () => void;
 }
 
-export function AdminDashboard({ issues, onUpdateStatus }: AdminDashboardProps) {
+export function AdminDashboard({ issues, onUpdateStatus, onRefresh }: AdminDashboardProps) {
   const [selectedIssue, setSelectedIssue] = useState<Issue | null>(null);
   const [statusFilter, setStatusFilter] = useState<IssueStatus | 'all'>('all');
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [lastRefreshed, setLastRefreshed] = useState<Date>(new Date());
+
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    if (onRefresh) await onRefresh();
+    setLastRefreshed(new Date());
+    setIsRefreshing(false);
+  };
 
   const stats = useMemo(() => {
     return {
@@ -35,6 +45,22 @@ export function AdminDashboard({ issues, onUpdateStatus }: AdminDashboardProps) 
 
   return (
     <div className="space-y-6">
+      {/* Header with Refresh */}
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-0.5">Last updated: {lastRefreshed.toLocaleTimeString()}</p>
+        </div>
+        <button
+          onClick={handleRefresh}
+          disabled={isRefreshing}
+          className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-xl font-medium text-sm transition-colors"
+        >
+          <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+          {isRefreshing ? 'Refreshing...' : 'Refresh'}
+        </button>
+      </div>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <div className="bg-white rounded-xl border border-gray-200 p-6">

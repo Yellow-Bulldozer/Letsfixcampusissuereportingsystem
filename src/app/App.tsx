@@ -106,6 +106,27 @@ export default function App() {
     };
   }, []);
 
+  // Auto-refresh every 30 seconds when logged in so all laptops stay in sync
+  useEffect(() => {
+    if (!currentUser) return;
+    const interval = setInterval(() => {
+      hydrateDashboard(currentUser);
+    }, 30000);
+    return () => clearInterval(interval);
+  }, [currentUser]);
+
+  // Refresh when user switches back to this browser tab
+  useEffect(() => {
+    if (!currentUser) return;
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        hydrateDashboard(currentUser);
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [currentUser]);
+
   const handleSignIn = async (email: string, password: string, role: UserRole): Promise<string | null> => {
     try {
       const { token, user } = await login(email.trim().toLowerCase(), password);
@@ -410,6 +431,7 @@ export default function App() {
               <AdminDashboard
                 issues={issues}
                 onUpdateStatus={handleUpdateStatus}
+                onRefresh={() => hydrateDashboard(currentUser!)}
               />
             )}
           </>
